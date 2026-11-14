@@ -1,3 +1,14 @@
+"use strict";
+(() => {
+  const $ = selector => document.querySelector(selector);
+  const escapeHTML = value =>
+    String(value ?? "").replace(/[&<>"']/g, character => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[character]));
 let database;
   let language = "tc";
   let currentState;
