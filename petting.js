@@ -407,7 +407,34 @@
 
   const effectParent = rabbit => rabbit.closest("dialog") || document.body;
 
-  function showBubble(rabbit, message, x, y) {
+   function showBubble(rabbit, message, x, y) {
+    // 兔兔在對話區內：直接換泡泡裡的文字，不另外浮出氣泡。
+    const talk = rabbit.closest(".companion")?.querySelector(":scope > div");
+    const line = talk?.querySelector("p");
+
+    if (line) {
+      bubble.hidden = true;
+      talk.setAttribute("aria-live", "polite");
+
+      if (!("bpOriginal" in line.dataset)) {
+        line.dataset.bpOriginal = line.textContent;
+      }
+
+      line.textContent = message;
+      talk.classList.remove("bp-said");
+      void talk.offsetWidth;
+      talk.classList.add("bp-said");
+
+      clearTimeout(line._bpTimer);
+      line._bpTimer = setTimeout(() => {
+        if (!line.isConnected) return;
+        line.textContent = line.dataset.bpOriginal;
+        delete line.dataset.bpOriginal;
+      }, 4500);
+      return;
+    }
+
+    // 其他位置的兔兔沿用浮動氣泡。
     effectParent(rabbit).append(bubble);
     bubbleRabbit = rabbit;
     bubble.textContent = message;

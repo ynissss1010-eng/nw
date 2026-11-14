@@ -376,3 +376,109 @@ footer{max-width:1180px;margin:0 auto;padding:0 28px 24px;text-align:center;colo
  #toast{bottom:95px}
 }
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+/* 兔兔對話區：兔兔＋對話泡泡一行，好感度條另起一行 */
+.companion {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-areas:
+    "pet talk"
+    "meter meter";
+  align-items: center;
+  gap: 14px 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+.companion > svg.rabbit {
+  grid-area: pet;
+  width: 96px;
+  margin: 0;
+}
+/* 真正的對話泡泡，小尾巴指向兔兔 */
+.companion > div {
+  grid-area: talk;
+  position: relative;
+  min-width: 0;
+  padding: 12px 15px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.companion > div::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background: var(--paper);
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  transform: translateY(-50%) rotate(45deg);
+}
+.companion > div strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 12px;
+}
+.companion > div p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+/* 提示框在對話區內改成一條橫向好感度列 */
+.companion > .bp-hint {
+  grid-area: meter;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 14px;
+  border-width: 1px;
+  box-shadow: none;
+  text-align: left;
+}
+.companion > .bp-hint::before,
+.companion > .bp-hint small {
+  display: none;
+}
+.companion > .bp-hint strong {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.companion > .bp-hint .bp-meter {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.companion > .bp-hint .bp-meter-label {
+  justify-content: flex-start;
+}
+/* 兔兔換對白時泡泡輕輕彈一下 */
+.companion > div.bp-said {
+  animation: companion-pop .45s ease;
+}
+@keyframes companion-pop {
+  40% { transform: scale(1.03); }
+}
+@media (max-width: 760px) {
+  .companion {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px 12px;
+    padding: 14px;
+  }
+  .companion > svg.rabbit {
+    width: 72px;
+  }
+  .companion > .bp-hint {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .companion > div.bp-said {
+    animation: none;
+  }
+}
