@@ -2595,6 +2595,35 @@
   async function start() {
     const extraStyle = document.createElement("style");
     extraStyle.textContent = `
+    .footer-creator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.creator-bunny {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.creator-bunny-photo {
+  display: block;
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 3px solid white;
+}
+
+.footer-creator .footer-credit {
+  margin: 0;
+}
       [hidden] { display:none !important; }
       .avatar-editor {
         display:flex;
@@ -2635,9 +2664,24 @@
           aria-label="Settings" style="text-decoration:none"></a>
       </div></header>
       <main id="content"></main>
-      <footer><div id="footerNote"></div>
-        <div class="footer-credit">Made by Yanice Mai</div>
-      </footer>
+      <footer>
+  <div id="footerNote"></div>
+
+  <div class="footer-creator">
+    <div class="creator-bunny">
+      <img
+        src="images/Bunny.png"
+        alt="創作者的兔兔"
+        class="creator-bunny-photo"
+      >
+      <span>這是創作者的兔兔</span>
+    </div>
+
+    <div class="footer-credit">
+      Made by Yanice Mai,Jaing Yu Ting
+    </div>
+  </div>
+</footer>
       <dialog id="modal"></dialog>
       <dialog id="viewer" aria-label="Photo viewer"></dialog>
       <div id="toast" role="status" aria-live="polite"></div>
