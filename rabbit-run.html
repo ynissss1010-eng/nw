@@ -320,8 +320,10 @@ button:focus-visible, a:focus-visible {
   const bestLabel = $("best");
   const preview = $("preview");
 
-  const GRAVITY = 1850;
-  const JUMP_SPEED = -690;
+  // 快速起跳、更高的跳躍，以及俐落落地。
+const GRAVITY = 3200;
+const JUMP_SPEED = -1040;
+
   const STEP = 1 / 120;
   const BEST_KEY = "bunny-run-best-v1";
 
@@ -692,7 +694,9 @@ button:focus-visible, a:focus-visible {
      * 加速時也不會把兩次跳躍壓得太近。
      */
     const maximumSpeed = baseSpeed() * 1.22;
-    const minimumGap = Math.max(145, maximumSpeed * 1.22);
+    // 兩顆石頭之間至少留出約 1.65 秒的跑動距離。
+const minimumGap = Math.max(190, maximumSpeed * 1.65);
+
 
     if (previous && x - (previous.x + previous.w) < minimumGap) {
       spawnTimer = .08;
@@ -701,8 +705,10 @@ button:focus-visible, a:focus-visible {
 
     rocks.push({x, w:width, h:height});
 
-    spawnTimer =
-      1.65 - difficulty * .12 + Math.random() * .4;
+    // 前期約 2.0～2.5 秒，後期約 1.9～2.4 秒生成一顆。
+spawnTimer =
+  2.0 - difficulty * .10 + Math.random() * .50;
+
   }
 
   function update(dt) {
