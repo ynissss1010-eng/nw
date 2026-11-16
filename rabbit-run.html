@@ -6,6 +6,7 @@
   content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#edf4df">
 <title>兔兔快跑 · Bunny accounting</title>
+
 <style>
 @import url("https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Nunito:wght@600;800;900&display=swap");
 
@@ -14,159 +15,281 @@
   --accent:#91576e;
   --paper:#fffdf5;
 }
-* {box-sizing:border-box}
-body {
+
+* { box-sizing:border-box; }
+
+html, body {
+  width:100%;
+  height:100%;
   margin:0;
-  color:var(--ink);
-  background:#edf4df;
-  font:16px/1.6 "Nunito","LXGW WenKai TC",sans-serif;
+  overflow:hidden;
+  overscroll-behavior:none;
 }
+
+body {
+  background:#edf4df;
+  color:var(--ink);
+  font:16px/1.6 "Nunito","LXGW WenKai TC",
+    "Microsoft JhengHei",sans-serif;
+}
+
 .game {
   position:relative;
   width:100%;
+  height:100vh;
   height:100dvh;
-  min-height:360px;
   overflow:hidden;
 }
+
 canvas {
   display:block;
   width:100%;
   height:100%;
   touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
 }
+
 .toolbar {
   position:absolute;
-  top:max(16px,env(safe-area-inset-top));
-  left:max(16px,env(safe-area-inset-left));
-  right:max(16px,env(safe-area-inset-right));
+  top:max(14px, env(safe-area-inset-top));
+  left:max(14px, env(safe-area-inset-left));
+  right:max(14px, env(safe-area-inset-right));
   display:flex;
   justify-content:space-between;
   align-items:flex-start;
-  gap:16px;
+  gap:12px;
   pointer-events:none;
+  z-index:2;
 }
-.back {
+
+.toolbar-actions {
+  display:flex;
+  gap:8px;
   pointer-events:auto;
+}
+
+.back, .pause {
+  min-height:43px;
+  padding:10px 13px;
+  border:1px solid #cbd8bb;
+  border-radius:13px;
+  background:#fffdf5ed;
   color:var(--ink);
   text-decoration:none;
-  padding:10px 15px;
-  border:1px solid #cbd8bb;
-  background:#fffdf5e8;
-  border-radius:14px;
-  font-size:13px;
+  font:700 12px/1.6 "Nunito","LXGW WenKai TC",sans-serif;
 }
+
+.pause { cursor:pointer; }
+
 .score {
-  text-align:right;
-  font-size:12px;
-  background:#fffdf5d9;
-  padding:10px 16px;
+  min-width:100px;
+  padding:10px 14px;
   border-radius:16px;
+  background:#fffdf5e8;
+  text-align:right;
+  font-size:11px;
 }
+
 .score strong {
   display:block;
-  font:900 31px/1.2 "Nunito",sans-serif;
+  font:900 30px/1.2 "Nunito",sans-serif;
 }
-.score small {color:#75846c}
+
+.score small { color:#75846c; }
+
 .overlay {
   position:absolute;
   inset:0;
   display:grid;
   place-items:center;
-  padding:24px;
-  background:#edf4df38;
+  padding:22px;
+  background:#edf4df55;
+  z-index:3;
 }
-.overlay[hidden] {display:none}
+
+.overlay[hidden] { display:none; }
+
 .sheet {
-  width:min(390px,100%);
-  text-align:center;
-  background:#fffdf5f5;
+  width:min(380px,100%);
+  max-height:calc(100dvh - 44px);
+  overflow:auto;
+  padding:26px 23px;
   border:1px solid #d6dfc8;
   border-radius:25px;
-  padding:30px 25px;
-  box-shadow:0 8px 0 #82936d12;
+  background:#fffdf5f5;
+  text-align:center;
+  box-shadow:0 7px 0 #82936d12;
 }
-.sheet svg {width:105px;height:100px}
-h1 {font-size:35px;margin:9px 0}
-p {font-size:14px;color:#74806b;margin:8px 0 22px}
+
+.preview {
+  display:block;
+  width:125px;
+  height:115px;
+  margin:0 auto 8px;
+  object-fit:contain;
+}
+
+.preview[hidden] { display:none; }
+
+h1 {
+  margin:7px 0;
+  font-size:33px;
+  line-height:1.4;
+}
+
+.sheet p {
+  margin:8px 0 20px;
+  color:#74806b;
+  font-size:14px;
+}
+
 .actions {
   display:flex;
   justify-content:center;
   gap:10px;
   flex-wrap:wrap;
 }
-button,.exit {
-  font:700 15px "Nunito","LXGW WenKai TC",sans-serif;
+
+.start, .exit {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
   min-height:46px;
-  padding:11px 20px;
-  border-radius:14px;
+  padding:11px 18px;
   border:1px solid #d3d9c8;
+  border-radius:14px;
+  font:700 14px "Nunito","LXGW WenKai TC",sans-serif;
+  text-decoration:none;
   cursor:pointer;
 }
-button {background:var(--accent);color:white;border-color:var(--accent)}
-.exit {background:white;color:var(--ink);text-decoration:none}
-button:focus-visible,a:focus-visible {
-  outline:3px solid #91576e;
+
+.start {
+  background:var(--accent);
+  border-color:var(--accent);
+  color:white;
+}
+
+.start:disabled {
+  opacity:.5;
+  cursor:wait;
+}
+
+.exit {
+  background:white;
+  color:var(--ink);
+}
+
+button:focus-visible, a:focus-visible {
+  outline:3px solid var(--accent);
   outline-offset:4px;
 }
+
 .hint {
   position:absolute;
-  bottom:max(24px,env(safe-area-inset-bottom));
-  left:16px;
-  right:16px;
+  left:12px;
+  right:12px;
+  bottom:max(17px, env(safe-area-inset-bottom));
   text-align:center;
-  color:#596f4f;
   font-size:12px;
+  color:#536c49;
   pointer-events:none;
 }
-.credit {font-size:10px;opacity:.65;margin-top:18px}
+
+.credit {
+  margin-top:17px;
+  color:#74806b;
+  font-size:10px;
+}
+
+@media(max-width:600px) {
+  .toolbar {
+    gap:8px;
+  }
+
+  .toolbar-actions {
+    gap:6px;
+  }
+
+  .back, .pause {
+    padding:9px 10px;
+    font-size:11px;
+  }
+
+  .score {
+    min-width:86px;
+    padding:9px 11px;
+  }
+
+  .score strong {
+    font-size:27px;
+  }
+
+  .hint {
+    font-size:11px;
+  }
+}
+
 @media(max-height:480px) {
-  .sheet {padding:15px 23px}
-  .sheet svg {width:65px;height:60px}
-  h1 {font-size:27px;margin:4px 0}
-  p {margin-bottom:13px}
-  .credit {margin-top:10px}
+  .sheet {
+    padding:16px 22px;
+  }
+
+  .preview {
+    width:80px;
+    height:70px;
+    margin-bottom:0;
+  }
+
+  h1 {
+    font-size:26px;
+    margin:3px 0;
+  }
+
+  .sheet p {
+    margin:5px 0 13px;
+    font-size:12px;
+  }
+
+  .credit {
+    margin-top:10px;
+  }
 }
 </style>
 </head>
+
 <body>
 <main class="game">
-  <canvas id="game" aria-label="兔兔快跑：點擊畫面跳過石頭"></canvas>
+
+  <canvas id="game"
+    aria-label="兔兔快跑，點擊畫面或按空白鍵跳過石頭">
+  </canvas>
 
   <header class="toolbar">
-    <a class="back" href="index.html">← 返回小窩</a>
-    <div class="score" aria-label="遊戲分數">
+    <div class="toolbar-actions">
+      <a class="back" href="index.html">← 返回小窩</a>
+      <button class="pause" id="pause" type="button">暫停</button>
+    </div>
+
+    <div class="score">
       分數
       <strong id="score">0</strong>
-      <small>最高紀錄 <span id="best">0</span></small>
+      <small>最高 <span id="best">0</span></small>
     </div>
   </header>
 
   <section class="overlay" id="overlay">
     <div class="sheet">
-      <svg viewBox="0 0 120 110" aria-hidden="true">
-        <path d="M39 49Q21-4 38 5q15 9 15 43
-          M65 47Q67-4 83 7q9 16-4 45"
-          fill="#fff9ee" stroke="#8b7163" stroke-width="2"/>
-        <path d="M39 33Q30 9 38 14l7 23
-          M73 34q4-24 9-18l-4 24"
-          fill="#eac2cb"/>
-        <ellipse cx="61" cy="73" rx="44" ry="33"
-          fill="#fff9ee" stroke="#8b7163" stroke-width="2"/>
-        <path d="M39 70q6-9 12 0m20 0q6-9 12 0"
-          fill="none" stroke="#655044" stroke-width="2.5"
-          stroke-linecap="round"/>
-        <ellipse cx="33" cy="82" rx="8" ry="4" fill="#efb3c3"/>
-        <ellipse cx="88" cy="82" rx="8" ry="4" fill="#efb3c3"/>
-        <path d="m56 78 5 5 5-5" fill="#b77d8d"/>
-        <path d="M55 87q6 8 12 0"
-          fill="none" stroke="#655044" stroke-width="2"/>
-      </svg>
+      <img id="preview" class="preview" alt="你領養的兔兔" hidden>
 
       <h1 id="title">兔兔快跑</h1>
-      <p id="message">草地出發！點一下畫面跳起，避開石頭呀～</p>
+
+      <p id="message">兔兔正在準備出發……</p>
 
       <div class="actions">
-        <button type="button" id="start">開始奔跑</button>
+        <button class="start" id="start" type="button" disabled>
+          正在載入兔兔
+        </button>
         <a class="exit" href="index.html">返回小窩</a>
       </div>
 
@@ -174,646 +297,689 @@ button:focus-visible,a:focus-visible {
     </div>
   </section>
 
-  <div class="hint" id="hint">點一下畫面跳躍 · 電腦可按 Space / ↑</div>
+  <div class="hint" id="hint">
+    點一下畫面跳躍 · 電腦可按 Space / ↑
+  </div>
+
 </main>
 
 <script>
 "use strict";
 
 (() => {
-  const canvas=document.getElementById("game");
-  const ctx=canvas.getContext("2d");
-  const overlay=document.getElementById("overlay");
-  const scoreLabel=document.getElementById("score");
-  const bestLabel=document.getElementById("best");
-  const title=document.getElementById("title");
-  const message=document.getElementById("message");
-  const startButton=document.getElementById("start");
-  const hint=document.getElementById("hint");
+  const $ = id => document.getElementById(id);
+  const canvas = $("game");
+  const ctx = canvas.getContext("2d");
 
-  const WIDTH=900;
-  const HEIGHT=500;
-  const GROUND=380;
-  const GRAVITY=1850;
-  const JUMP_SPEED=-690;
-  const BEST_KEY="bunny-run-best-v1";
+  const overlay = $("overlay");
+  const title = $("title");
+  const message = $("message");
+  const startButton = $("start");
+  const pauseButton = $("pause");
+  const scoreLabel = $("score");
+  const bestLabel = $("best");
+  const preview = $("preview");
 
-  let state="ready";
-  let best=0;
-  let score=0;
-  let distance=0;
-  let speed=310;
-  let spawn=1.8;
-  let rocks=[];
-  let clock=0;
-  let lastTime=0;
-  let accumulator=0;
-  let runningBeforeHidden=false;
-  let faceTimer=0;
+  const GRAVITY = 1850;
+  const JUMP_SPEED = -690;
+  const STEP = 1 / 120;
+  const BEST_KEY = "bunny-run-best-v1";
 
-  try {
-    const stored=Number(localStorage.getItem(BEST_KEY));
-    if(Number.isFinite(stored)&&stored>=0) best=Math.floor(stored);
-  } catch {}
+  let worldWidth = 900;
+  let worldHeight = 500;
+  let ground = 380;
+  let displayScale = 1;
+  let dpr = 1;
 
-  bestLabel.textContent=best;
+  let mode = "ready";
+  let ready = false;
+  let best = 0;
+  let score = 0;
+  let elapsedRun = 0;
+  let distance = 0;
+  let speed = 300;
+  let spawnTimer = 1.7;
+  let rocks = [];
 
-  const bunny={
+  let clock = 0;
+  let lastTime = 0;
+  let accumulator = 0;
+  let jumpBuffer = 0;
+  let lastScoreDisplay = -1;
+
+  const images = {};
+
+  const bunny = {
     x:155,
-    y:GROUND,
+    y:380,
     vy:0,
     onGround:true
   };
 
-  const fur=["#ead6ba","#bba59f","#777173","#fff8ec"];
-  let coat="#fff8ec";
-  let breed=0;
-
-  // 讀取領養兔子的毛色及品種。讀取失敗仍可正常玩。
   try {
-    const request=indexedDB.open("bunny-yanice-v5");
-    request.onsuccess=()=>{
-      const db=request.result;
-      if(!db.objectStoreNames.contains("data")) {
-        db.close();
-        return;
-      }
-
-      const tx=db.transaction("data","readonly");
-      const read=tx.objectStore("data").get("main");
-
-      read.onsuccess=()=>{
-        const pet=read.result?.pet;
-        if(pet) {
-          coat=fur[pet.coat]||coat;
-          breed=Number(pet.breed)||0;
-        }
-      };
-
-      tx.oncomplete=()=>db.close();
-      tx.onabort=()=>db.close();
-    };
+    const value = Number(localStorage.getItem(BEST_KEY));
+    if (Number.isFinite(value) && value >= 0) {
+      best = Math.floor(value);
+    }
   } catch {}
 
+  bestLabel.textContent = best;
+
+  /* ---------- 響應式畫面 ---------- */
+
   function resize() {
-    const dpr=Math.min(devicePixelRatio||1,2);
-    canvas.width=Math.round(canvas.clientWidth*dpr);
-    canvas.height=Math.round(canvas.clientHeight*dpr);
-  }
+    const width = Math.max(1, canvas.clientWidth);
+    const height = Math.max(1, canvas.clientHeight);
 
-  window.addEventListener("resize",resize);
-  resize();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-  function start() {
-    score=0;
-    distance=0;
-    speed=310;
-    spawn=1.8;
-    rocks=[];
-    bunny.y=GROUND;
-    bunny.vy=0;
-    bunny.onGround=true;
-    faceTimer=0;
-    accumulator=0;
-    state="running";
-    overlay.hidden=true;
-    hint.textContent="點一下畫面跳躍 · Space / ↑";
-    scoreLabel.textContent="0";
-    lastTime=performance.now();
-  }
-
-  function jump() {
-    if(state!=="running"||!bunny.onGround) return;
-
-    bunny.vy=JUMP_SPEED;
-    bunny.onGround=false;
-    faceTimer=.32;
-  }
-
-  function gameOver() {
-    state="over";
-
-    if(score>best) {
-      best=score;
-      bestLabel.textContent=best;
-      try {localStorage.setItem(BEST_KEY,String(best));} catch {}
-    }
-
-    title.textContent="哎呀，碰到石頭喇！";
-    message.textContent=`今次跑咗 ${score} 分。拍拍毛毛，再嚟一次？`;
-    startButton.textContent="再跑一次";
-    overlay.hidden=false;
-    hint.textContent="兔兔休息一下，隨時可以再出發。";
-  }
-
-  startButton.addEventListener("click",()=>{
-    if(state==="paused") {
-      state="running";
-      accumulator=0;
-      lastTime=performance.now();
-      overlay.hidden=true;
-    } else {
-      start();
-    }
-  });
-
-  canvas.addEventListener("pointerdown",event=>{
-    if(!event.isPrimary||event.button!==0) return;
-    event.preventDefault();
-    jump();
-  });
-
-  document.addEventListener("keydown",event=>{
-    if(!["Space","ArrowUp"].includes(event.code)) return;
-    if(event.target.closest("button,a,input")) return;
-
-    event.preventDefault();
-    if(!event.repeat) jump();
-  });
-
-  document.addEventListener("visibilitychange",()=>{
-    if(document.hidden) {
-      runningBeforeHidden=state==="running";
-      if(runningBeforeHidden) state="paused";
-      accumulator=0;
-    } else if(runningBeforeHidden&&state==="paused") {
-      title.textContent="兔兔等緊你～";
-      message.textContent="準備好就繼續奔跑！";
-      startButton.textContent="繼續奔跑";
-      overlay.hidden=false;
-      runningBeforeHidden=false;
-      lastTime=performance.now();
-    }
-  });
-
-  function update(dt) {
-    clock+=dt;
-
-    if(state!=="running") return;
-
-    distance+=speed*dt;
-    score=Math.floor(distance/35);
-    scoreLabel.textContent=score;
-
-    // 緩慢加速，最高 430，避免過快壓縮反應時間。
-speed = Math.min(430, 310 + distance / 220);
-
-
-    faceTimer=Math.max(0,faceTimer-dt);
-
-    bunny.vy+=GRAVITY*dt;
-    bunny.y+=bunny.vy*dt;
-
-    if(bunny.y>=GROUND) {
-      bunny.y=GROUND;
-      bunny.vy=0;
-      bunny.onGround=true;
-    }
-
-    spawn-=dt;
-
-    spawn -= dt;
-
-if (spawn <= 0) {
-  const difficulty = Math.min(1, score / 600);
-
-  // 限制石頭大小，不再同時生成又高又闊的大石。
-  const tall = Math.random() < 0.4;
-
-  const width = tall
-    ? 28 + Math.random() * 6
-    : 34 + Math.random() * 10;
-
-  const height = tall
-    ? 34 + Math.random() * 8
-    : 25 + Math.random() * 8;
-
-  /*
-   * 同時檢查前一顆石頭的位置。
-   * 即使計時到了，也必須保留足夠的實際距離。
-   */
-  const previous = rocks[rocks.length - 1];
-  const spawnX = WIDTH + 55;
-
-  // 前一顆石頭右邊到新石頭左邊的空白距離。
-  const clearGap = previous
-    ? spawnX - (previous.x + previous.w)
-    : Infinity;
-
-  // 至少保留約 1.1 秒跑動距離，可落地再跳。
-  const minimumGap = speed * 1.1;
-
-  if (clearGap >= minimumGap) {
-    rocks.push({
-      x: spawnX,
-      w: width,
-      h: height,
-      variant: Math.random()
-    });
-
-    // 前期較寬鬆，後期仍留出穩定的落地時間。
-    spawn =
-      1.55 -
-      difficulty * 0.15 +
-      Math.random() * 0.35;
-
-  } else {
-    // 距離不夠就延後，不硬塞下一顆石頭。
-    spawn = 0.08;
-  }
-}
-
-
-
-    rocks.forEach(rock=>rock.x-=speed*dt);
-    rocks=rocks.filter(rock=>rock.x+rock.w>-60);
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
 
     /*
-     * 碰撞框比插畫略小。
-     * 耳朵、尾巴及外圍絨毛不算撞到。
+     * 手機不再把 900px 橫向畫面整張縮小。
+     * 以螢幕高度決定兔兔大小，世界寬度跟著螢幕調整。
      */
-    const player={
-      left:bunny.x-19,
-      right:bunny.x+28,
-      top:bunny.y-49,
-      bottom:bunny.y-5
+    displayScale = Math.max(.68, Math.min(1.5, height / 560));
+
+    worldWidth = width / displayScale;
+    worldHeight = height / displayScale;
+    ground = worldHeight * .77;
+
+    bunny.x = Math.min(155, Math.max(65, worldWidth * .24));
+
+    // 改變尺寸時不保留舊障礙，避免石頭突然出現在身邊。
+    rocks = [];
+    spawnTimer = 1.7;
+    bunny.y = ground;
+    bunny.vy = 0;
+    bunny.onGround = true;
+    jumpBuffer = 0;
+
+    if (mode === "running") {
+      pauseGame("畫面尺寸改變了，準備好再繼續呀～");
+    }
+  }
+
+  window.addEventListener("resize", resize);
+  resize();
+
+  /* ---------- 沿用首頁兔兔 ---------- */
+
+  const expressions = {
+    normal: `
+      <g fill="none" stroke="#6d5048" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="83" cy="114" rx="3.8" ry="5"
+          fill="#44302b" stroke="none"/>
+        <ellipse cx="120" cy="114" rx="3.8" ry="5"
+          fill="#44302b" stroke="none"/>
+        <circle cx="84" cy="112" r="1.3"
+          fill="white" stroke="none"/>
+        <circle cx="121" cy="112" r="1.3"
+          fill="white" stroke="none"/>
+        <path d="M97 137q5 5 10 0"/>
+      </g>`,
+
+    happy: `
+      <g fill="none" stroke="#6d5048" stroke-width="2.3"
+        stroke-linecap="round">
+        <path d="M77 116q6-10 12 0m25 0q6-10 12 0"/>
+        <path d="M95 135q7 13 14 0Z" fill="#bd7c8e"/>
+      </g>
+      <ellipse cx="74" cy="128" rx="10" ry="5"
+        fill="#e894ab" opacity=".6"/>
+      <ellipse cx="130" cy="128" rx="10" ry="5"
+        fill="#e894ab" opacity=".6"/>`,
+
+    blink: `
+      <g fill="none" stroke="#6d5048" stroke-width="2"
+        stroke-linecap="round">
+        <path d="M77 115q6 5 12 0m25 0q6 5 12 0"/>
+        <path d="M97 137q5 5 10 0"/>
+      </g>`,
+
+    jump: `
+      <g fill="none" stroke="#6d5048" stroke-width="2"
+        stroke-linecap="round">
+        <ellipse cx="83" cy="114" rx="4.5" ry="6"
+          fill="#44302b" stroke="none"/>
+        <ellipse cx="120" cy="114" rx="4.5" ry="6"
+          fill="#44302b" stroke="none"/>
+        <circle cx="84" cy="112" r="1.4"
+          fill="white" stroke="none"/>
+        <circle cx="121" cy="112" r="1.4"
+          fill="white" stroke="none"/>
+        <ellipse cx="102" cy="139" rx="3" ry="4"
+          fill="#b77c87" stroke="none"/>
+      </g>`,
+
+    crash: `
+      <g fill="none" stroke="#6d5048" stroke-width="2.4"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="m78 109 9 6-9 5m47-11-9 6 9 5"/>
+        <path d="M97 141q5-6 10 0"/>
+      </g>
+      <path d="M140 118q7 10 0 14q-7-4 0-14Z"
+        fill="#a8cede"/>`
+  };
+
+  async function loadBunny() {
+    let source;
+
+    try {
+      source = sessionStorage.getItem("bunny-run-home-appearance");
+    } catch {}
+
+    if (!source) {
+      message.textContent =
+        "請返回首頁，從「兔兔快跑」入口進來，把你領養的兔兔帶過來。";
+      startButton.textContent = "請先返回首頁";
+      return;
+    }
+
+    try {
+      const template = new DOMParser().parseFromString(
+        source, "image/svg+xml"
+      );
+
+      if (
+        template.querySelector("parsererror") ||
+        template.documentElement.localName !== "svg"
+      ) {
+        throw Error("Invalid rabbit SVG");
+      }
+
+      await Promise.all(
+        Object.entries(expressions).map(async ([name, expression]) => {
+          const copy = template.cloneNode(true);
+          const svg = copy.documentElement;
+
+          let face = copy.querySelector("[data-run-face]");
+
+          if (!face) {
+            face = copy.createElementNS(
+              "http://www.w3.org/2000/svg", "g"
+            );
+            face.setAttribute("data-run-face", "");
+            svg.append(face);
+          }
+
+          face.innerHTML = expression;
+
+          const text = new XMLSerializer().serializeToString(copy);
+          const url = URL.createObjectURL(
+            new Blob([text], {type:"image/svg+xml;charset=utf-8"})
+          );
+
+          try {
+            images[name] = await new Promise((resolve, reject) => {
+              const image = new Image();
+              image.onload = () => resolve(image);
+              image.onerror = () => reject(Error("Image load failed"));
+              image.src = url;
+            });
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        })
+      );
+
+      // 預覽使用已解碼圖像轉成 PNG，不依賴已釋放的 Blob URL。
+      const small = document.createElement("canvas");
+      small.width = 240;
+      small.height = 220;
+      small.getContext("2d").drawImage(images.happy, 0, 0, 240, 220);
+
+      preview.src = small.toDataURL("image/png");
+      preview.hidden = false;
+
+      ready = true;
+      startButton.disabled = false;
+      startButton.textContent = "開始奔跑";
+      message.textContent =
+        "點一下跳過石頭，越跑越快。準備好就出發啦～";
+    } catch (error) {
+      console.error("載入兔兔：", error);
+      message.textContent =
+        "兔兔圖片未能載入。請返回首頁，再從遊戲入口進來。";
+      startButton.textContent = "載入失敗";
+    }
+  }
+
+  /* ---------- 遊戲狀態 ---------- */
+
+  function baseSpeed() {
+    /*
+     * 依可見前方距離決定起步速度。
+     * 手機不會和電腦一樣快，卻只有一小段反應距離。
+     */
+    const ahead = Math.max(80, worldWidth - bunny.x - 35);
+    return Math.min(300, Math.max(105, ahead / 1.65));
+  }
+
+  function startGame() {
+    if (!ready) return;
+
+    mode = "running";
+    score = 0;
+    elapsedRun = 0;
+    distance = 0;
+    speed = baseSpeed();
+    spawnTimer = 1.7;
+    rocks = [];
+    jumpBuffer = 0;
+    accumulator = 0;
+    lastScoreDisplay = -1;
+
+    bunny.y = ground;
+    bunny.vy = 0;
+    bunny.onGround = true;
+
+    overlay.hidden = true;
+    pauseButton.textContent = "暫停";
+    scoreLabel.textContent = "0";
+    lastTime = performance.now();
+
+    // 避免開始按鈕保留焦點，擋住空白鍵跳躍。
+    startButton.blur();
+  }
+
+  function resumeGame() {
+    mode = "running";
+    overlay.hidden = true;
+    accumulator = 0;
+    lastTime = performance.now();
+    pauseButton.textContent = "暫停";
+    startButton.blur();
+  }
+
+  function pauseGame(reason = "兔兔等緊你，準備好再繼續～") {
+    if (mode !== "running") return;
+
+    mode = "paused";
+    jumpBuffer = 0;
+    accumulator = 0;
+
+    title.textContent = "休息一下";
+    message.textContent = reason;
+    startButton.textContent = "繼續奔跑";
+    overlay.hidden = false;
+    pauseButton.textContent = "已暫停";
+  }
+
+  function endGame() {
+    mode = "over";
+    jumpBuffer = 0;
+
+    if (score > best) {
+      best = score;
+      bestLabel.textContent = best;
+      try {
+        localStorage.setItem(BEST_KEY, String(best));
+      } catch {}
+    }
+
+    title.textContent = "哎呀，撞到石頭喇！";
+    message.textContent = `今次 ${score} 分，拍拍毛毛再跑一次？`;
+    startButton.textContent = "再跑一次";
+    overlay.hidden = false;
+    pauseButton.textContent = "暫停";
+  }
+
+  function requestJump() {
+    if (mode !== "running") return;
+    // 落地前一小段時間按跳，也會在落地後接上。
+    jumpBuffer = .11;
+  }
+
+  startButton.addEventListener("click", () => {
+    if (mode === "paused") resumeGame();
+    else startGame();
+  });
+
+  pauseButton.addEventListener("click", () => {
+    if (mode === "running") pauseGame();
+  });
+
+  canvas.addEventListener("pointerdown", event => {
+    if (!event.isPrimary || event.button !== 0) return;
+    event.preventDefault();
+    requestJump();
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.code === "Escape" && mode === "running") {
+      event.preventDefault();
+      pauseGame();
+      return;
+    }
+
+    if (!["Space", "ArrowUp"].includes(event.code)) return;
+    if (mode !== "running") return;
+
+    event.preventDefault();
+    if (!event.repeat) requestJump();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) pauseGame("兔兔幫你暫停喇，返嚟再繼續～");
+  });
+
+  window.addEventListener("blur", () => {
+    pauseGame("準備好再繼續，唔使急～");
+  });
+
+  /* ---------- 障礙與物理 ---------- */
+
+  function spawnRock() {
+    const difficulty = Math.min(1, score / 600);
+    const tall = Math.random() < .4;
+
+    const width = tall
+      ? 27 + Math.random() * 6
+      : 33 + Math.random() * 9;
+
+    const height = tall
+      ? 33 + Math.random() * 8
+      : 24 + Math.random() * 8;
+
+    const x = worldWidth + 30;
+    const previous = rocks[rocks.length - 1];
+
+    /*
+     * 使用最高預期速度檢查間距，
+     * 加速時也不會把兩次跳躍壓得太近。
+     */
+    const maximumSpeed = baseSpeed() * 1.22;
+    const minimumGap = Math.max(145, maximumSpeed * 1.22);
+
+    if (previous && x - (previous.x + previous.w) < minimumGap) {
+      spawnTimer = .08;
+      return;
+    }
+
+    rocks.push({x, w:width, h:height});
+
+    spawnTimer =
+      1.65 - difficulty * .12 + Math.random() * .4;
+  }
+
+  function update(dt) {
+    clock += dt;
+
+    if (mode !== "running") return;
+
+    elapsedRun += dt;
+    score = Math.floor(elapsedRun * 10);
+
+    const difficulty = Math.min(1, score / 600);
+    speed = baseSpeed() * (1 + difficulty * .22);
+    distance += speed * dt;
+
+    if (jumpBuffer > 0 && bunny.onGround) {
+      bunny.vy = JUMP_SPEED;
+      bunny.onGround = false;
+      jumpBuffer = 0;
+    } else {
+      jumpBuffer = Math.max(0, jumpBuffer - dt);
+    }
+
+    bunny.vy += GRAVITY * dt;
+    bunny.y += bunny.vy * dt;
+
+    if (bunny.y >= ground) {
+      bunny.y = ground;
+      bunny.vy = 0;
+      bunny.onGround = true;
+    }
+
+    // 每個步進只扣一次，不再重複生成障礙。
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) spawnRock();
+
+    rocks.forEach(rock => {
+      rock.x -= speed * dt;
+    });
+
+    rocks = rocks.filter(rock => rock.x + rock.w > -60);
+
+    /*
+     * 寬鬆碰撞框：
+     * 不把耳朵、尾巴、鬚鬚及外圍絨毛當成身體。
+     */
+    const player = {
+      left:bunny.x - 21,
+      right:bunny.x + 24,
+      top:bunny.y - 48,
+      bottom:bunny.y - 4
     };
 
-    for(const rock of rocks) {
-      const left=rock.x+5;
-      const right=rock.x+rock.w-5;
-      const top=GROUND-rock.h+6;
+    for (const rock of rocks) {
+      const obstacle = {
+        left:rock.x + 5,
+        right:rock.x + rock.w - 5,
+        top:ground - rock.h + 6
+      };
 
-      if(
-        player.right>left&&player.left<right&&
-        player.bottom>top&&player.top<GROUND
+      if (
+        player.right > obstacle.left &&
+        player.left < obstacle.right &&
+        player.bottom > obstacle.top &&
+        player.top < ground
       ) {
-        gameOver();
+        endGame();
         break;
       }
     }
   }
 
-  function ellipse(x,y,rx,ry,fill,stroke) {
+  /* ---------- 草地背景 ---------- */
+
+  function oval(x, y, rx, ry, color) {
     ctx.beginPath();
-    ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);
-    ctx.fillStyle=fill;
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = color;
     ctx.fill();
-    if(stroke) {
-      ctx.strokeStyle=stroke;
-      ctx.lineWidth=2;
-      ctx.stroke();
-    }
   }
 
-  function line(points,color,width=2) {
+  function stroke(points, color, width = 2) {
     ctx.beginPath();
-    ctx.moveTo(points[0][0],points[0][1]);
-    points.slice(1).forEach(p=>ctx.lineTo(p[0],p[1]));
-    ctx.strokeStyle=color;
-    ctx.lineWidth=width;
-    ctx.lineCap="round";
-    ctx.lineJoin="round";
+    ctx.moveTo(points[0][0], points[0][1]);
+    points.slice(1).forEach(([x,y]) => ctx.lineTo(x,y));
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     ctx.stroke();
   }
 
-  function cloud(x,y,scale) {
+  function cloud(x, y, scale) {
     ctx.save();
     ctx.translate(x,y);
     ctx.scale(scale,scale);
-    ellipse(0,0,34,15,"#fffdf3");
-    ellipse(-20,-5,18,15,"#fffdf3");
-    ellipse(8,-14,23,20,"#fffdf3");
-    ellipse(29,-3,19,15,"#fffdf3");
+    oval(0,0,34,13,"#fffdf3");
+    oval(-18,-5,18,14,"#fffdf3");
+    oval(7,-13,23,19,"#fffdf3");
+    oval(29,-2,18,13,"#fffdf3");
     ctx.restore();
   }
 
   function background() {
-    ctx.fillStyle="#edf4df";
-    ctx.fillRect(0,0,WIDTH,HEIGHT);
+    ctx.fillStyle = "#edf4df";
+    ctx.fillRect(0,0,worldWidth,worldHeight);
 
-    ellipse(730,92,38,38,"#f7e6aa");
+    oval(worldWidth * .78, ground * .23, 29,29,"#f7e6aa");
 
-    for(let i=0;i<4;i++) {
-      const x=((i*280+120-distance*.035)%1120+1120)%1120-100;
-      cloud(x,90+(i%2)*45,.85+(i%2)*.2);
+    const cloudSpan = worldWidth + 180;
+    const cloudCount = Math.max(3, Math.ceil(worldWidth / 240));
+
+    for (let i = 0; i < cloudCount; i++) {
+      const x = (
+        (i * 255 + 80 - distance * .07) % cloudSpan + cloudSpan
+      ) % cloudSpan - 70;
+
+      cloud(x, ground * .25 + (i % 2) * 36, .7);
     }
 
-    ctx.fillStyle="#dce8c4";
+    // 山丘也按實際螢幕寬度繪製，不使用固定的橫向座標。
     ctx.beginPath();
-    ctx.moveTo(0,GROUND);
-    ctx.quadraticCurveTo(150,235,340,330);
-    ctx.quadraticCurveTo(550,245,WIDTH,325);
-    ctx.lineTo(WIDTH,HEIGHT);
-    ctx.lineTo(0,HEIGHT);
+    ctx.moveTo(0,ground);
+    ctx.quadraticCurveTo(
+      worldWidth * .2, ground - 105,
+      worldWidth * .48, ground - 35
+    );
+    ctx.quadraticCurveTo(
+      worldWidth * .75, ground - 105,
+      worldWidth, ground - 30
+    );
+    ctx.lineTo(worldWidth,worldHeight);
+    ctx.lineTo(0,worldHeight);
+    ctx.closePath();
+    ctx.fillStyle = "#dce8c4";
     ctx.fill();
 
-    ctx.fillStyle="#b9d394";
-    ctx.fillRect(0,GROUND,WIDTH,HEIGHT-GROUND);
+    ctx.fillStyle = "#b9d394";
+    ctx.fillRect(0,ground,worldWidth,worldHeight-ground);
+    stroke([[0,ground],[worldWidth,ground]],"#8eb072",2.5);
 
-    line([[0,GROUND],[WIDTH,GROUND]],"#8eb072",3);
+    const spacing = 36;
+    const shift = (distance * .8) % spacing;
 
-    // 草和小花循環移動。
-    for(let i=0;i<30;i++) {
-      const x=((i*39-distance*.8)%1170+1170)%1170-70;
-      const y=GROUND+18+(i%4)*24;
+    for (let i = -1; i < worldWidth / spacing + 2; i++) {
+      const x = i * spacing - shift;
+      const y = ground + 19 + ((i % 3 + 3) % 3) * 19;
 
-      line([[x-3,y],[x,y-6],[x+2,y]],"#8eae73",1.4);
+      stroke([[x-3,y],[x,y-6],[x+2,y]],"#8eae73",1.2);
 
-      if(i%5===0) {
-        ellipse(x+14,y-4,3,3,"#fff8dc");
-        ellipse(x+14,y-4,1.1,1.1,"#d4b85c");
+      if ((i + 99) % 5 === 0) {
+        oval(x+13,y-4,3,3,"#fff8dc");
+        oval(x+13,y-4,1,1,"#d4b85c");
       }
     }
   }
 
   function drawRock(rock) {
-    const x=rock.x,y=GROUND,h=rock.h,w=rock.w;
+    const {x,w,h} = rock;
 
-    ellipse(x+w/2,y+3,w*.6,4,"#8a9e7260");
+    oval(x+w/2,ground+3,w*.58,3.5,"#8a9e7240");
 
     ctx.beginPath();
-    ctx.moveTo(x,y);
-    ctx.lineTo(x+w*.1,y-h*.6);
-    ctx.lineTo(x+w*.37,y-h);
-    ctx.lineTo(x+w*.75,y-h*.85);
-    ctx.lineTo(x+w,y-h*.3);
-    ctx.lineTo(x+w*.95,y);
+    ctx.moveTo(x,ground);
+    ctx.lineTo(x+w*.1,ground-h*.6);
+    ctx.lineTo(x+w*.37,ground-h);
+    ctx.lineTo(x+w*.75,ground-h*.85);
+    ctx.lineTo(x+w,ground-h*.3);
+    ctx.lineTo(x+w*.95,ground);
     ctx.closePath();
-    ctx.fillStyle="#a2a49a";
+
+    ctx.fillStyle = "#a2a49a";
     ctx.fill();
-    ctx.lineWidth=2;
-    ctx.strokeStyle="#7c8277";
+    ctx.strokeStyle = "#7c8277";
+    ctx.lineWidth = 1.7;
     ctx.stroke();
 
-    line([
-      [x+w*.16,y-h*.55],
-      [x+w*.4,y-h*.8],
-      [x+w*.62,y-h*.66]
-    ],"#c8c9bd",2);
+    stroke([
+      [x+w*.17,ground-h*.55],
+      [x+w*.4,ground-h*.8],
+      [x+w*.62,ground-h*.66]
+    ],"#c8c9bd",1.6);
   }
 
-/* 使用首頁兔兔的 SVG 原圖，不重新建模 */
-const homeBunnyImages = {};
-let homeBunnyReady = false;
+  /* ---------- 首頁兔兔跑步 ---------- */
 
-const homeBunnyExpressions = {
-  normal: `
-    <g fill="none" stroke="#6d5048" stroke-width="2"
-      stroke-linecap="round" stroke-linejoin="round">
-      <ellipse cx="83" cy="114" rx="3.8" ry="5"
-        fill="#44302b" stroke="none"/>
-      <ellipse cx="120" cy="114" rx="3.8" ry="5"
-        fill="#44302b" stroke="none"/>
-      <circle cx="84" cy="112" r="1.3"
-        fill="white" stroke="none"/>
-      <circle cx="121" cy="112" r="1.3"
-        fill="white" stroke="none"/>
-      <path d="M97 137q5 5 10 0"/>
-    </g>
-  `,
+  function drawBunny() {
+    if (!ready) return;
 
-  happy: `
-    <g fill="none" stroke="#6d5048" stroke-width="2.3"
-      stroke-linecap="round" stroke-linejoin="round">
-      <path d="M77 116q6-10 12 0m25 0q6-10 12 0"/>
-      <path d="M95 135q7 13 14 0Z" fill="#bd7c8e"/>
-    </g>
-    <ellipse cx="74" cy="128" rx="10" ry="5"
-      fill="#e894ab" opacity=".6"/>
-    <ellipse cx="130" cy="128" rx="10" ry="5"
-      fill="#e894ab" opacity=".6"/>
-  `,
+    const moving = mode === "running";
+    const airborne = !bunny.onGround;
+    const phase = clock * 15;
+    const hop = moving && !airborne
+      ? Math.abs(Math.sin(phase)) * 4
+      : 0;
 
-  blink: `
-    <g fill="none" stroke="#6d5048" stroke-width="2"
-      stroke-linecap="round">
-      <path d="M77 115q6 5 12 0m25 0q6 5 12 0"/>
-      <path d="M97 137q5 5 10 0"/>
-    </g>
-  `,
+    const height = Math.max(0,ground-bunny.y);
 
-  jump: `
-    <g fill="none" stroke="#6d5048" stroke-width="2"
-      stroke-linecap="round">
-      <ellipse cx="83" cy="114" rx="4.5" ry="6"
-        fill="#44302b" stroke="none"/>
-      <ellipse cx="120" cy="114" rx="4.5" ry="6"
-        fill="#44302b" stroke="none"/>
-      <circle cx="84" cy="112" r="1.4"
-        fill="white" stroke="none"/>
-      <circle cx="121" cy="112" r="1.4"
-        fill="white" stroke="none"/>
-      <ellipse cx="102" cy="139" rx="3" ry="4"
-        fill="#b77c87" stroke="none"/>
-    </g>
-  `,
-
-  crash: `
-    <g fill="none" stroke="#6d5048" stroke-width="2.4"
-      stroke-linecap="round" stroke-linejoin="round">
-      <path d="m78 109 9 6-9 5m47-11-9 6 9 5"/>
-      <path d="M97 141q5-6 10 0"/>
-    </g>
-    <path d="M140 118q7 10 0 14q-7-4 0-14Z"
-      fill="#a8cede"/>
-  `
-};
-
-async function loadHomeBunny() {
-  let source;
-
-  try {
-    source = sessionStorage.getItem("bunny-run-home-appearance");
-  } catch (error) {
-    console.error(error);
-  }
-
-  if (!source) {
-    startButton.disabled = true;
-    message.textContent =
-      "請先返回首頁，從「兔兔快跑」入口進來，就能帶上你領養的兔兔。";
-    return;
-  }
-
-  try {
-    const parser = new DOMParser();
-    const template = parser.parseFromString(source, "image/svg+xml");
-
-    if (template.querySelector("parsererror")) {
-      throw Error("Invalid rabbit SVG");
-    }
-
-    await Promise.all(
-      Object.entries(homeBunnyExpressions).map(async ([name, expression]) => {
-        const documentCopy = template.cloneNode(true);
-        const face = documentCopy.querySelector("[data-run-face]");
-
-        if (!face) throw Error("Missing face layer");
-
-        face.innerHTML = expression;
-
-        const svg = new XMLSerializer().serializeToString(documentCopy);
-        const url = URL.createObjectURL(
-          new Blob([svg], {type: "image/svg+xml;charset=utf-8"})
-        );
-
-        try {
-          const image = await new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = () => reject(Error("Rabbit image could not load"));
-            img.src = url;
-          });
-
-          homeBunnyImages[name] = image;
-        } finally {
-          URL.revokeObjectURL(url);
-        }
-      })
+    oval(
+      bunny.x,
+      ground+4,
+      Math.max(16,32-height*.065),
+      4.5,
+      "#6e8a5d28"
     );
 
-    homeBunnyReady = true;
-    startButton.disabled = false;
-    message.textContent = "你嘅兔兔準備好喇！點一下畫面跳過石頭呀～";
+    let face = "normal";
+    if (mode === "over") face = "crash";
+    else if (airborne) face = "jump";
+    else if (clock % 4 > 3.86) face = "blink";
+    else if (moving && clock % 3 < .6) face = "happy";
 
-  } catch (error) {
-    console.error("載入首頁兔兔：", error);
-    startButton.disabled = true;
-    message.textContent = "兔兔外觀未能載入，請返回首頁，再由遊戲入口進來。";
-  }
-}
+    ctx.save();
+    ctx.translate(bunny.x,bunny.y-hop);
 
-startButton.disabled = true;
-loadHomeBunny();
+    // 沿用首頁原圖，向右跑時水平翻轉。
+    ctx.scale(-1,1);
 
-function drawBunny() {
-  if (!homeBunnyReady) return;
+    const tilt = airborne
+      ? bunny.vy < 0 ? .075 : -.025
+      : moving ? Math.sin(phase)*.025 : 0;
 
-  const moving = state === "running";
-  const airborne = !bunny.onGround;
-  const phase = clock * 15;
+    ctx.rotate(tilt);
 
-  const hop = moving && !airborne
-    ? Math.abs(Math.sin(phase)) * 5
-    : 0;
+    const scale = .49;
+    ctx.drawImage(
+      images[face],
+      -120*scale,
+      -198*scale,
+      240*scale,
+      220*scale
+    );
+    ctx.restore();
 
-  const height = Math.max(0, GROUND - bunny.y);
+    if (moving && !airborne) {
+      for (let i=0;i<3;i++) {
+        const p = (clock*2.8+i/3)%1;
 
-  // 陰影與兔兔分開，跳起來時影子留在地面。
-  ctx.beginPath();
-  ctx.ellipse(
-    bunny.x,
-    GROUND + 4,
-    Math.max(17, 34 - height * .07),
-    5,
-    0, 0, Math.PI * 2
-  );
-  ctx.fillStyle = "#6e8a5d28";
-  ctx.fill();
-
-  let expression = "normal";
-
-  if (state === "over") {
-    expression = "crash";
-  } else if (airborne) {
-    expression = "jump";
-  } else if (clock % 4 > 3.86) {
-    expression = "blink";
-  } else if (moving && clock % 3 < .6) {
-    expression = "happy";
-  }
-
-  const image = homeBunnyImages[expression] || homeBunnyImages.normal;
-
-  ctx.save();
-  ctx.translate(bunny.x, bunny.y - hop);
-
-  /*
-   * 首頁兔兔朝左，遊戲向右跑：
-   * 水平翻轉整張原圖，保留品種與配飾。
-   * 不壓扁或拉長身體。
-   */
-  ctx.scale(-1, 1);
-
-  const tilt = airborne
-    ? (bunny.vy < 0 ? .09 : -.035)
-    : moving ? Math.sin(phase) * .035 : 0;
-
-  ctx.rotate(tilt);
-
-  const scale = .49;
-
-  /*
-   * 圖片座標以原 SVG 120,198 為腳底中心。
-   * 將腳底對齊遊戲地面。
-   */
-  ctx.drawImage(
-    image,
-    -120 * scale,
-    -198 * scale,
-    240 * scale,
-    220 * scale
-  );
-
-  ctx.restore();
-
-  // 腳後方的小塵點，補強向前奔跑的感覺。
-  if (moving && !airborne) {
-    for (let i = 0; i < 3; i++) {
-      const p = (clock * 2.8 + i / 3) % 1;
-
-      ctx.beginPath();
-      ctx.ellipse(
-        bunny.x - 35 - p * 25,
-        GROUND - 3 - p * 8,
-        2.8 * (1 - p) + .3,
-        1.8 * (1 - p) + .2,
-        0, 0, Math.PI * 2
-      );
-
-      ctx.fillStyle = `rgba(165,151,119,${.32 * (1 - p)})`;
-      ctx.fill();
+        oval(
+          bunny.x-35-p*22,
+          ground-3-p*7,
+          2.5*(1-p)+.3,
+          1.5*(1-p)+.2,
+          `rgba(165,151,119,${.3*(1-p)})`
+        );
+      }
     }
   }
-}
-
 
   function draw() {
-    const sx=canvas.width/WIDTH;
-    const sy=canvas.height/HEIGHT;
-
-    /*
-     * 同比例顯示，不把兔兔橫向拉扁。
-     * 草地背景填滿畫面，遊戲區置中。
-     */
     ctx.setTransform(1,0,0,1,0,0);
-    ctx.fillStyle="#edf4df";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    const scale=Math.min(sx,sy);
-    const offsetX=(canvas.width-WIDTH*scale)/2;
-    const offsetY=(canvas.height-HEIGHT*scale)/2;
+    const scale = displayScale*dpr;
+    ctx.setTransform(scale,0,0,scale,0,0);
 
-    ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
     background();
     rocks.forEach(drawRock);
     drawBunny();
+
+    if (score !== lastScoreDisplay) {
+      scoreLabel.textContent = score;
+      lastScoreDisplay = score;
+    }
   }
 
   function frame(time) {
-    if(!lastTime) lastTime=time;
+    if (!lastTime) lastTime = time;
 
-    const elapsed=Math.min((time-lastTime)/1000,.05);
-    lastTime=time;
+    const dt = Math.min((time-lastTime)/1000,.05);
+    lastTime = time;
 
-    if(!document.hidden) {
-      accumulator+=elapsed;
-      const step=1/120;
+    if (!document.hidden) {
+      accumulator += dt;
 
-      while(accumulator>=step) {
-        update(step);
-        accumulator-=step;
+      while (accumulator >= STEP) {
+        update(STEP);
+        accumulator -= STEP;
       }
 
       draw();
@@ -822,6 +988,7 @@ function drawBunny() {
     requestAnimationFrame(frame);
   }
 
+  loadBunny();
   requestAnimationFrame(frame);
 })();
 </script>
