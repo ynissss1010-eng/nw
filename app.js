@@ -2595,6 +2595,7 @@
   async function start() {
     const extraStyle = document.createElement("style");
     extraStyle.textContent = `
+  
     .footer-creator {
   display: flex;
   align-items: center;
@@ -2606,17 +2607,27 @@
 
 .creator-bunny {
   display: flex;
-  flex-direction: column;
+  flex-direction: column;   /* 圖片區和文字上下排 */
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  font-size: 13px;
+}
+
+.creator-bunny-photos {
+  display: flex;
+  flex-direction: row;      /* 兩張圖片左右排 */
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
 .creator-bunny-photo {
   display: block;
-  width: 90px;
-  height: 90px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
+  object-position: center;
   border-radius: 16px;
   border: 3px solid white;
 }
@@ -2669,12 +2680,21 @@
 
   <div class="footer-creator">
     <div class="creator-bunny">
-      <img
-        src="images/Bunny.png"
-        alt="創作者的兔兔"
-        class="creator-bunny-photo"
-      >
-      <span>這是創作者的兔兔</span>
+<div class="creator-bunny-photos">
+        <img
+          src="images/Bunny.png"
+          alt="創作者的第一隻兔兔"
+          class="creator-bunny-photo"
+        >
+
+        <img
+          src="images/Bunny2.png"
+          alt="創作者的第二隻兔兔"
+          class="creator-bunny-photo"
+        >
+      </div>
+
+      <span>HI~我地係創作者嘅兔兔吖~</span>
     </div>
 
     <div class="footer-credit">
