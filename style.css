@@ -482,313 +482,38 @@ footer{max-width:1180px;margin:0 auto;padding:0 28px 24px;text-align:center;colo
     animation: none;
   }
 }
-/* ==================================================
-   首頁兔兔：直接融入粉色背景，取消內層遊戲框
-   對應目前 bunny-play.js 的 hp-* 元件
-   ================================================== */
-
-/* 整片粉色歡迎區 */
-#content .hero.hp-integrated {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.2fr);
-  align-items: center;
-  gap: 16px;
-
-  min-height: 440px;
-  padding: 38px 36px 30px;
-
-  background: var(--soft, #fae8ee);
-  border: 0;
-  border-radius: 30px;
-  box-shadow: none;
-  overflow: hidden;
-}
-
-/* 左邊文字 */
-#content .hero.hp-integrated > div:first-child {
-  position: relative;
-  z-index: 1;
-  padding: 5px 0 15px 8px;
-}
-
-#content .hero.hp-integrated h1 {
-  margin: 17px 0 15px;
-  font-size: clamp(28px, 3vw, 39px);
-  line-height: 1.4;
-}
-
-#content .hero.hp-integrated > div:first-child > p {
-  max-width: 390px;
-  margin-bottom: 0;
-  font-size: 15px;
-  line-height: 2;
-}
-
-#content .hero.hp-integrated .tag {
-  padding: 0;
-  background: transparent;
-  color: var(--accent);
-  font-size: 10px;
-  letter-spacing: 2px;
-}
-
-#content .hero.hp-integrated .hero-actions {
-  margin-top: 25px;
-  gap: 17px;
-}
-
-#content .hero.hp-integrated .hero-actions .primary {
-  min-height: 48px;
-  padding: 11px 20px;
-  border-radius: 16px;
-}
-
-/* 取消小房間的外框、底色、內邊距 */
-#content .hero.hp-integrated .hp-room {
-  position: relative;
-  width: 100%;
-  min-width: 0;
-  max-width: none;
-  margin: 0;
-  padding: 0;
-
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
-
-/* 不再像另一個模組般顯示標題列 */
-#content .hero.hp-integrated .hp-room-heading {
-  justify-content: center;
-  padding: 0;
-  margin: 0 0 -10px;
-}
-
-#content .hero.hp-integrated .hp-room-heading strong {
-  color: var(--accent);
-  font-size: 16px;
-  letter-spacing: 1px;
-}
-
-#content .hero.hp-integrated .hp-room-heading small {
-  display: none;
-}
-
-/* 場景與粉色背景完全連成一片 */
-#content .hero.hp-integrated .hp-world {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 500 / 265;
-
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-
-  /* 留一點空間給跳躍及動耳仔 */
-  overflow: visible;
-}
-
-/* 移除原本整片奶油色牆面 */
-#content .hero.hp-integrated .hp-world > rect:first-child {
-  fill: transparent;
-}
-
-/* 移除地板和地板分界線 */
-#content .hero.hp-integrated .hp-world > path {
-  display: none;
-}
-
-/* 移除地毯，保留兔兔腳下的影子 */
-#content .hero.hp-integrated
-.hp-world > ellipse:not([data-hp-shadow]) {
-  display: none;
-}
-
-/* 窗戶降低存在感，不要像另一個小房間 */
-#content .hero.hp-integrated .hp-world > rect:not(:first-child) {
-  opacity: 0.38;
-}
-
-#content .hero.hp-integrated .hp-world > circle {
-  opacity: 0.5;
-}
-
-/* 放大兔兔：
-   只放大兔子本身，原有追球及走動座標繼續使用 */
-#content .hero.hp-integrated svg[data-hp-pet] {
-  transform-box: fill-box;
-  transform-origin: center bottom;
-  transform: scale(1.4);
-  filter: drop-shadow(0 5px 3px #8653640a);
-}
-
-/* 腳下影子柔和一點 */
-#content .hero.hp-integrated [data-hp-shadow] {
-  opacity: 0.1;
-}
-
-/* 梳子稍微放大，放大的兔兔梳毛時也看得清楚 */
-#content .hero.hp-integrated [data-hp-brush] > rect,
-#content .hero.hp-integrated [data-hp-brush] > path {
-  stroke-width: 2;
-}
-
-/* 互動入口直接放在粉色背景上 */
-#content .hero.hp-integrated .hp-actions {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 5px 10px;
-
-  margin: -2px 0 0;
-  padding: 0;
-}
-
-#content .hero.hp-integrated .hp-actions button {
-  flex: 0 1 auto;
-  min-width: 68px;
-  min-height: 42px;
-  padding: 8px 11px;
-
-  background: transparent;
-  color: var(--accent);
-
-  border: 1px solid transparent;
-  border-radius: 20px;
-  box-shadow: none;
-
-  font-size: 13px;
-  font-weight: 700;
-}
-
-#content .hero.hp-integrated .hp-actions button:hover {
-  background: #ffffff80;
-  border-color: #ffffffa0;
-}
-
-#content .hero.hp-integrated .hp-actions button:active {
-  background: #ffffffb0;
-}
-
-#content .hero.hp-integrated .hp-actions button:disabled {
-  opacity: 0.4;
-}
-
-/* 兔兔說話直接在背景上，不加另一個氣泡框 */
-#content .hero.hp-integrated .hp-line {
-  max-width: 370px;
-  min-height: 48px;
-  margin: 10px auto 0;
-  padding: 0 12px;
-
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-
-  color: var(--ink);
-  font-size: 14px;
-  line-height: 1.8;
-  text-align: center;
-}
-
-/* 保留清楚的觸摸提示，但不再增加一個框 */
-#content .hero.hp-integrated .hp-touch {
-  display: block;
-  width: fit-content;
-  max-width: 100%;
-  min-height: 36px;
-  margin: 3px auto 0;
-  padding: 5px 10px;
-
-  background: transparent;
-  border: 0;
-  border-radius: 12px;
-  box-shadow: none;
-
-  color: var(--accent);
-  font-size: 12px;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 5px;
-}
-
-#content .hero.hp-integrated .hp-touch:hover {
-  background: #ffffff60;
-}
-
-/* 平板 */
-@media (min-width: 761px) and (max-width: 1050px) {
-  #content .hero.hp-integrated {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-    min-height: 390px;
-    padding: 30px 24px;
-  }
-
-  #content .hero.hp-integrated > div:first-child > p {
-    font-size: 14px;
-  }
-}
-
-/* 手機：同一片粉色背景，文字在上、放大兔兔在下 */
+/* 手機首頁：歡迎文字 → 兔兔 → 餵食與好感度 */
 @media (max-width: 760px) {
-  #content .hero.hp-integrated {
-    grid-template-columns: minmax(0, 1fr);
-    min-height: 0;
-    gap: 14px;
-    padding: 27px 21px 23px;
-    border-radius: 25px;
+  body[data-page="home"] .hero.bh-open {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
   }
-
-  #content .hero.hp-integrated > div:first-child {
-    padding: 0;
+  /*
+   * 讓左側文字區裡的內容參與排列，
+   * 才能把餵食區單獨移到兔兔下面。
+   */
+  body[data-page="home"] .hero.bh-open > div:first-child {
+    display: contents;
   }
-
-  #content .hero.hp-integrated h1 {
-    margin: 14px 0 12px;
-    font-size: 30px;
+  /* 歡迎文字及新增記帳按鈕在最上面 */
+  body[data-page="home"] .hero.bh-open > div:first-child > * {
+    order: 0;
   }
-
-  #content .hero.hp-integrated > div:first-child > p {
-    max-width: none;
-    font-size: 14px;
-    line-height: 1.9;
+  /* 兔兔在餵食區上方 */
+  body[data-page="home"] .hero.bh-open > .bh-stage {
+    order: 1;
+    width: 100%;
+    max-width: 490px;
+    align-self: center;
+    margin: 0;
   }
-
-  #content .hero.hp-integrated .hero-actions {
-    margin-top: 20px;
-  }
-
-  #content .hero.hp-integrated .hp-room {
-    max-width: 500px;
-    justify-self: center;
-    margin-top: 5px;
-  }
-
-  #content .hero.hp-integrated .hp-room-heading {
-    margin-bottom: 0;
-  }
-
-  #content .hero.hp-integrated svg[data-hp-pet] {
-    transform: scale(1.4);
-  }
-
-  #content .hero.hp-integrated .hp-actions {
-    gap: 4px;
-    margin-top: 0;
-  }
-
-  #content .hero.hp-integrated .hp-actions button {
-    min-width: 62px;
-    min-height: 44px;
-    padding: 8px 9px;
-    font-size: 13px;
-  }
-
-  #content .hero.hp-integrated .hp-line {
-    max-width: 340px;
-    margin-top: 9px;
-    font-size: 13px;
+  /* 餵食及好感度移到兔兔下面 */
+  body[data-page="home"] .hero.bh-open #rabbitCarePanel {
+    order: 2;
+    width: 100%;
+    margin: 0;
+    padding-top: 16px;
   }
 }
