@@ -320,9 +320,10 @@ button:focus-visible, a:focus-visible {
   const bestLabel = $("best");
   const preview = $("preview");
 
-  // 快速起跳、更高的跳躍，以及俐落落地。
-const GRAVITY = 3200;
-const JUMP_SPEED = -1040;
+  // 約 0.85 秒完成一次跳躍，最高約 181。
+// 配合手機起步速度，每跳跨越約 187 個世界座標單位。
+const GRAVITY = 2000;
+const JUMP_SPEED = -850;
 
   const STEP = 1 / 120;
   const BEST_KEY = "bunny-run-best-v1";
@@ -552,13 +553,10 @@ const JUMP_SPEED = -1040;
   /* ---------- 遊戲狀態 ---------- */
 
   function baseSpeed() {
-    /*
-     * 依可見前方距離決定起步速度。
-     * 手機不會和電腦一樣快，卻只有一小段反應距離。
-     */
-    const ahead = Math.max(80, worldWidth - bunny.x - 35);
-    return Math.min(300, Math.max(105, ahead / 1.65));
-  }
+  // 手機也保持足夠跑速，不再降到慢慢挪動。
+  return worldWidth < 600 ? 220 : 300;
+}
+
 
   function startGame() {
     if (!ready) return;
@@ -675,41 +673,44 @@ const JUMP_SPEED = -1040;
   /* ---------- 障礙與物理 ---------- */
 
   function spawnRock() {
-    const difficulty = Math.min(1, score / 600);
-    const tall = Math.random() < .4;
+  const spawnX = worldWidth + 30;
+  const previous = rocks[rocks.length - 1];
 
-    const width = tall
-      ? 27 + Math.random() * 6
-      : 33 + Math.random() * 9;
+  /*
+   * 用最高跑速預留間距：
+   * 一次跳躍約 0.85 秒，
+   * 兩塊石頭中間至少保留 1.65 秒跑動距離。
+   */
+  const maximumSpeed = baseSpeed() * 1.30;
+  const minimumGap = maximumSpeed * 1.65;
 
-    const height = tall
-      ? 33 + Math.random() * 8
-      : 24 + Math.random() * 8;
-
-    const x = worldWidth + 30;
-    const previous = rocks[rocks.length - 1];
-
-    /*
-     * 使用最高預期速度檢查間距，
-     * 加速時也不會把兩次跳躍壓得太近。
-     */
-    const maximumSpeed = baseSpeed() * 1.22;
-    // 兩顆石頭之間至少留出約 1.65 秒的跑動距離。
-const minimumGap = Math.max(190, maximumSpeed * 1.65);
-
-
-    if (previous && x - (previous.x + previous.w) < minimumGap) {
-      spawnTimer = .08;
-      return;
-    }
-
-    rocks.push({x, w:width, h:height});
-
-    // 前期約 2.0～2.5 秒，後期約 1.9～2.4 秒生成一顆。
-spawnTimer =
-  2.0 - difficulty * .10 + Math.random() * .50;
-
+  if (
+    previous &&
+    spawnX - (previous.x + previous.w) < minimumGap
+  ) {
+    spawnTimer = 0.08;
+    return;
   }
+
+  const tall = Math.random() < 0.35;
+
+  rocks.push({
+    x: spawnX,
+
+    // 不把難度同時堆在速度和巨型石頭上。
+    w: tall
+      ? 27 + Math.random() * 6
+      : 34 + Math.random() * 8,
+
+    h: tall
+      ? 34 + Math.random() * 7
+      : 25 + Math.random() * 8
+  });
+
+  // 每次生成後留出穩定準備時間，不隨分數強行縮短。
+  spawnTimer = 1.95 + Math.random() * 0.40;
+}
+
 
   function update(dt) {
     clock += dt;
@@ -719,8 +720,11 @@ spawnTimer =
     elapsedRun += dt;
     score = Math.floor(elapsedRun * 10);
 
-    const difficulty = Math.min(1, score / 600);
-    speed = baseSpeed() * (1 + difficulty * .22);
+    // 持續奔跑 90 秒，逐漸達到最高速度。
+// 手機：220 → 286；電腦：300 → 390。
+const difficulty = Math.min(1, elapsedRun / 90);
+speed = baseSpeed() * (1 + difficulty * 0.30);
+
     distance += speed * dt;
 
     if (jumpBuffer > 0 && bunny.onGround) {
