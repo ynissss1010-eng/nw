@@ -1,70 +1,115 @@
 "use strict";
+
 (() => {
-  const $ = selector => document.querySelector(selector);
-  const escapeHTML = value =>
-    String(value ?? "").replace(/[&<>"']/g, character => ({
+  if (window.__bunnyFoodCareV2) return;
+  window.__bunnyFoodCareV2 = true;
+
+  const $ = s => document.querySelector(s);
+  const DB_NAME = "bunny-yanice-v5";
+
+  const foods = {
+    grass: {
+      tc: "提摩西草",
+      sc: "提摩西草",
+      en: "Timothy hay",
+      count: 1,
+      income: 10,
+      points: 5
+    },
+    pellets: {
+      tc: "兔糧",
+      sc: "兔粮",
+      en: "Pellets",
+      count: 3,
+      income: 50,
+      points: 8
+    },
+    apple: {
+      tc: "蘋果乾",
+      sc: "苹果干",
+      en: "Dried apple",
+      count: 5,
+      income: 100,
+      points: 12
+    }
+  };
+
+  let dbPromise;
+  let state;
+  let queue = Promise.resolve();
+  let syncing = false;
+  let scheduled = false;
+  let feeding = false;
+  let message = "";
+  let messageUntil = 0;
+  let channel;
+
+  try {
+    channel = new BroadcastChannel("bunny-yanice");
+  } catch {}
+
+  function text(tc, sc, en) {
+    return state?.lang === "en" ? en :
+      state?.lang === "sc" ? sc : tc;
+  }
+
+  function foodName(food) {
+    return food[state?.lang || "tc"];
+  }
+
+  function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, c => ({
       "&": "&amp;",
       "<": "&lt;",
       ">": "&gt;",
       '"': "&quot;",
       "'": "&#39;"
-    }[character]));
-  const DATABASE_NAME = "bunny-yanice-v5";
-  const POINTS_PER_FEED = 5;
-  let database;
-  let currentState;
-  let busy = false;
-  let scheduled = false;
-  let feeding = false;
-  let lastMessage = "";
-  let messageUntil = 0;
-  let channel;
-  try {
-    channel = new BroadcastChannel("bunny-yanice");
-  } catch {}
-  function language() {
-    return currentState?.lang || "tc";
+    }[c]));
   }
-  function text(tc, sc, en) {
-    return language() === "en"
-      ? en
-      : language() === "sc"
-        ? sc
-        : tc;
-  }
-  function getLevel(affection) {
-    if (affection >= 80) {
+
+  function level(value) {
+    if (value >= 80) {
       return text("超級黏你", "超级黏你", "Your little shadow");
     }
-    if (affection >= 50) {
+    if (value >= 50) {
       return text("好鍾意你", "好喜欢你", "Very fond of you");
     }
-    if (affection >= 20) {
+    if (value >= 20) {
       return text("開始熟絡", "开始熟络", "Getting closer");
     }
     return text("初次見面", "初次见面", "Getting acquainted");
   }
-  function defaultMessage(care) {
-    if (care.affection >= 100) {
-      return text(
-        "最鍾意你喇！今日都要陪住你記帳～",
-        "最喜欢你啦！今天也要陪你记账～",
-        "You’re my favourite! Let’s keep your journal together."
-      );
-    }
-    if (care.grass > 0) {
-      return text(
-        "聞到提摩西草香喇！係咪有我份㗎？",
-        "闻到提摩西草的香味啦！有我的份吗？",
-        "I smell Timothy hay! Is some of it for me?"
-      );
-    }
-    return text(
-      "記一筆小帳，就有一份提摩西草。兔兔喺度等你呀～",
-      "记一笔小账，就有一份提摩西草。兔兔在这里等你～",
-      "One new record earns a serving of Timothy hay. I’ll be right here!"
-    );
+
+  function money(cents) {
+    return `${state.base} ${(cents / 100).toLocaleString(
+      state.lang === "en" ? "en-GB" :
+        state.lang === "sc" ? "zh-CN" : "zh-HK",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    )}`;
   }
+
+  function database() {
+    if (!dbPromise) {
+      dbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains("data")) {
+            request.result.createObjectStore("data");
+          }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    return dbPromise;
+  }
+
   function validCare(care) {
     return care &&
       care.version === 1 &&
@@ -78,512 +123,738 @@
       Array.isArray(care.seenEntryIds) &&
       care.seenEntryIds.every(id => typeof id === "string");
   }
-  async function getDatabase() {
-    if (database) return database;
-    database = await new Promise((resolve, reject) => {
-      const request = indexedDB.open(DATABASE_NAME, 1);
-      request.onupgradeneeded = () => {
-        if (!request.result.objectStoreNames.contains("data")) {
-          request.result.createObjectStore("data");
-        }
-      };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-    return database;
-  }
+
   /*
-   * 在同一個資料庫交易內：
-   * 讀取最新帳目 → 計算新獎勵 → 儲存照顧資料。
-   * 避免不同分頁重複領取。
+   * 保留 rabbitCare.version = 1：
+   * 與 app.js、petting.js、bunny-life.js 的既有資料相容。
+   * 新獎勵系統另外存在 foodRewards。
    */
-  async function updateCare(action = "sync") {
-    const db = await getDatabase();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction("data", "readwrite");
-      const store = transaction.objectStore("data");
-      const request = store.get("main");
-      let result = {
-        state: null,
-        rewarded: 0,
-        fed: false,
-        changed: false,
-        error: ""
+  function prepareCare(latest) {
+    latest.rabbitCare ||= {
+      version: 1,
+      grass: 0,
+      affection: 0,
+      feedCount: 0,
+      seenEntryIds: []
+    };
+
+    const care = latest.rabbitCare;
+
+    if (!validCare(care)) {
+      throw Error("Invalid care data");
+    }
+
+    if (!care.foodRewards) {
+      care.pellets = 0;
+      care.apple = 0;
+
+      care.foodRewards = {
+        version: 1,
+        count: 0,
+        incomeCents: 0,
+        claimed: {
+          grass: 0,
+          pellets: 0,
+          apple: 0
+        },
+        // 升級前的帳目只建立基準。
+        seenIds: [...new Set(latest.entries.map(entry => entry.id))]
       };
-      request.onsuccess = () => {
-        try {
-          const state = request.result;
-          if (!state?.ready || !Array.isArray(state.entries)) {
-            return;
-          }
-          result.state = state;
-          if (!state.rabbitCare) {
-            // 安裝當下的舊帳只作基準，不補發獎勵。
-            state.rabbitCare = {
-              version: 1,
-              grass: 0,
-              affection: 0,
-              feedCount: 0,
-              seenEntryIds: [
-                ...new Set(state.entries.map(entry => entry.id))
-              ]
-            };
-            result.changed = true;
-          }
-          if (!validCare(state.rabbitCare)) {
-            throw new Error("Invalid rabbit care data");
-          }
-          const care = state.rabbitCare;
-          const knownIds = new Set(care.seenEntryIds);
-          state.entries.forEach(entry => {
-            if (typeof entry.id !== "string" || knownIds.has(entry.id)) {
+    }
+
+    const rewards = care.foodRewards;
+
+    if (
+      rewards.version !== 1 ||
+      !Number.isSafeInteger(rewards.count) ||
+      rewards.count < 0 ||
+      !Number.isSafeInteger(rewards.incomeCents) ||
+      rewards.incomeCents < 0 ||
+      !Array.isArray(rewards.seenIds) ||
+      !rewards.seenIds.every(id => typeof id === "string") ||
+      !rewards.claimed
+    ) {
+      throw Error("Invalid food reward data");
+    }
+
+    for (const key of Object.keys(foods)) {
+      if (
+        !Number.isSafeInteger(care[key]) ||
+        care[key] < 0 ||
+        !Number.isSafeInteger(rewards.claimed[key]) ||
+        rewards.claimed[key] < 0
+      ) {
+        throw Error("Invalid food inventory");
+      }
+    }
+
+    return care;
+  }
+
+  function transaction(action = "sync", foodKey = "") {
+    const job = queue.then(async () => {
+      const db = await database();
+
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("data", "readwrite");
+        const store = tx.objectStore("data");
+        const request = store.get("main");
+
+        let result = null;
+        let failure;
+
+        request.onsuccess = () => {
+          try {
+            const latest = request.result;
+
+            if (!latest?.ready || !Array.isArray(latest.entries)) {
               return;
             }
-            knownIds.add(entry.id);
-            care.grass++;
-            result.rewarded++;
-            result.changed = true;
-          });
-          care.seenEntryIds = [...knownIds];
-          if (action === "feed") {
-            if (care.grass < 1) {
-              result.error = "empty";
-            } else if (care.affection >= 100) {
-              // 已滿好感時不浪費草。
-              result.error = "full";
-            } else {
-              care.grass--;
-              care.affection = Math.min(
-                100,
-                care.affection + POINTS_PER_FEED
-              );
-              care.feedCount++;
-              result.fed = true;
-              result.changed = true;
+
+            const before = JSON.stringify(latest.rabbitCare);
+            const care = prepareCare(latest);
+            const rewards = care.foodRewards;
+            const seen = new Set(rewards.seenIds);
+
+            result = {
+              state: latest,
+              earned: { grass: 0, pellets: 0, apple: 0 },
+              fed: false,
+              delta: 0,
+              error: ""
+            };
+
+            /*
+             * 新帳目只累計一次。
+             * 收入使用第一次看到該帳目時的 converted 金額。
+             */
+            latest.entries.forEach(entry => {
+              if (
+                typeof entry.id !== "string" ||
+                seen.has(entry.id)
+              ) return;
+
+              seen.add(entry.id);
+              rewards.count++;
+
+              if (entry.type === "income") {
+                const cents = Math.round(Number(entry.converted) * 100);
+
+                if (!Number.isSafeInteger(cents) || cents < 0) {
+                  throw Error("Invalid income amount");
+                }
+
+                rewards.incomeCents += cents;
+              }
+            });
+
+            if (
+              !Number.isSafeInteger(rewards.count) ||
+              !Number.isSafeInteger(rewards.incomeCents)
+            ) {
+              throw Error("Reward totals too large");
             }
+
+            rewards.seenIds = [...seen];
+
+            // 保留舊觸摸程式使用的欄位。
+            care.seenEntryIds = [...new Set([
+              ...care.seenEntryIds,
+              ...rewards.seenIds
+            ])];
+
+            for (const [key, food] of Object.entries(foods)) {
+              const byCount = Math.floor(
+                rewards.count / food.count
+              );
+
+              const byIncome = Math.floor(
+                rewards.incomeCents / (food.income * 100)
+              );
+
+              // OR：取較高進度，同一級不發兩次。
+              const entitled = Math.max(byCount, byIncome);
+              const earned = Math.max(
+                0,
+                entitled - rewards.claimed[key]
+              );
+
+              care[key] += earned;
+              rewards.claimed[key] += earned;
+              result.earned[key] = earned;
+
+              if (!Number.isSafeInteger(care[key])) {
+                throw Error("Inventory too large");
+              }
+            }
+
+            if (action === "feed") {
+              const food = foods[foodKey];
+
+              if (!food) throw Error("Unknown food");
+
+              if (care.affection >= 100) {
+                result.error = "full";
+              } else if (care[foodKey] < 1) {
+                result.error = "empty";
+              } else {
+                const old = care.affection;
+
+                care[foodKey]--;
+                care.affection = Math.min(
+                  100,
+                  care.affection + food.points
+                );
+
+                care.feedCount++;
+                care.lastFood = foodKey;
+
+                result.fed = true;
+                result.delta = care.affection - old;
+              }
+            }
+
+            result.changed =
+              before !== JSON.stringify(latest.rabbitCare);
+
+            if (result.changed) store.put(latest, "main");
+          } catch (error) {
+            failure = error;
+            tx.abort();
           }
-          if (result.changed) {
-            store.put(state, "main");
-          }
-        } catch (error) {
-          transaction.abort();
-          reject(error);
-        }
-      };
-      transaction.oncomplete = () => resolve(result);
-      transaction.onerror = () => reject(transaction.error);
-      transaction.onabort = () =>
-        reject(transaction.error || new Error("Care update aborted"));
+        };
+
+        tx.oncomplete = () => resolve(result);
+        tx.onerror = () => reject(failure || tx.error);
+        tx.onabort = () => reject(
+          failure || tx.error || Error("Care update aborted")
+        );
+      });
     });
+
+    queue = job.catch(() => null);
+    return job;
   }
-  /* ---------- Appearance ---------- */
+
+  /* ---------- 直接融入粉色卡片左下方 ---------- */
+
   const style = document.createElement("style");
+
   style.textContent = `
-    .rabbit-care {
-      margin:0 0 25px;
-      padding:23px;
-      border:1px solid var(--line, #ecdfdf);
-      border-radius:19px;
-      background:var(--paper, #fffefd);
+    .hero > .rabbit-care,
+    .hero > div > .rabbit-care {
+      min-width:0;
     }
+
+    .hero .rabbit-care {
+      margin:23px 0 0;
+      padding:18px 0 0;
+      border:0;
+      border-top:1px dashed #b8819655;
+      border-radius:0;
+      background:transparent;
+      box-shadow:none;
+      text-align:left;
+    }
+
     .rabbit-care-header {
       display:flex;
-      align-items:center;
       justify-content:space-between;
-      gap:12px;
-      margin-bottom:17px;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:11px;
     }
+
     .rabbit-care-header h2 {
       margin:0;
-      font-size:20px;
+      font-size:15px;
     }
+
     .rabbit-care-level {
-      background:var(--soft, #fae8ee);
-      color:var(--accent, #a64f70);
-      padding:4px 10px;
-      border-radius:9px;
-      font-size:12px;
+      color:var(--accent,#a64f70);
+      font-size:11px;
     }
-    .rabbit-care-main {
-      display:grid;
-      grid-template-columns:100px minmax(0,1fr) auto;
-      gap:20px;
-      align-items:center;
-    }
-    .rabbit-care-hay {
-      width:96px;
-      height:96px;
-      display:block;
-      padding:10px;
-      border-radius:18px;
-      background:#f3f2e4;
-    }
+
     .rabbit-care-numbers {
+      font-size:12px;
       display:flex;
       justify-content:space-between;
-      gap:12px;
-      font-size:13px;
+      gap:10px;
     }
-    .rabbit-care-numbers strong {
-      font-family:"Nunito",sans-serif;
-      color:var(--accent, #a64f70);
-    }
+
     .rabbit-care-track {
-      height:10px;
-      margin:11px 0;
-      border-radius:20px;
+      height:7px;
+      margin:9px 0 13px;
+      border-radius:12px;
       overflow:hidden;
-      background:#eee5e8;
+      background:#ffffff99;
     }
+
     .rabbit-care-track i {
       display:block;
       height:100%;
-      border-radius:20px;
-      background:var(--accent, #a64f70);
+      background:var(--accent,#a64f70);
+      border-radius:12px;
       transition:width .4s ease;
     }
-    .rabbit-care-message {
-      font-size:13px;
-      line-height:1.8;
-      margin:0;
-      color:var(--muted, #806b72);
+
+    .rc-foods {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
     }
-    .rabbit-care-actions {
+
+    .rc-food {
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:3px;
+      padding:8px 3px;
+      border:1px solid #ffffffaa;
+      border-radius:13px;
+      background:#ffffff45;
+      color:var(--ink,#4a383d);
       text-align:center;
     }
-    .rabbit-care-actions small {
+
+    .rc-food:hover {
+      background:#ffffff85;
+    }
+
+    .rc-food svg {
       display:block;
-      margin-top:7px;
-      color:var(--muted, #806b72);
+      width:45px;
+      height:45px;
+    }
+
+    .rc-food strong {
+      font-size:12px;
+    }
+
+    .rc-food small {
+      font-size:10px;
+      color:var(--muted,#806b72);
+    }
+
+    .rabbit-care-message {
+      margin:11px 0 0 !important;
+      font-size:12px !important;
+      line-height:1.7 !important;
+      color:var(--accent,#a64f70);
+    }
+
+    .rc-rules {
+      margin-top:11px;
       font-size:11px;
+      color:var(--muted,#806b72);
     }
-    .rabbit-care-rule {
-      margin:15px 0 0;
-      padding-top:13px;
-      border-top:1px dashed var(--line, #ecdfdf);
-      color:var(--muted, #806b72);
-      font-size:11px;
+
+    .rc-rules summary {
+      cursor:pointer;
+      width:fit-content;
     }
-    .rabbit-care.is-feeding .rabbit-care-hay {
-      animation:rabbit-hay-nibble .55s ease-in-out 2;
+
+    .rc-rule-row {
+      margin-top:8px;
+      line-height:1.7;
     }
-    @keyframes rabbit-hay-nibble {
-      0%,100% { transform:rotate(0) scale(1); }
-      35% { transform:rotate(-7deg) scale(.94); }
-      70% { transform:rotate(5deg) scale(1.03); }
+
+    .rc-feedback {
+      display:inline-block;
+      margin-left:6px;
+      font-weight:800;
+      color:var(--accent,#a64f70);
     }
-    @media(max-width:650px) {
-      .rabbit-care {
-        padding:19px;
+
+    #content > .rabbit-care {
+      padding:20px;
+      margin:24px 0 0;
+      border:1px solid var(--line,#ecdfdf);
+      border-radius:16px;
+      background:var(--paper,#fffefd);
+      max-width:560px;
+    }
+
+    @media(max-width:760px) {
+      .hero .rabbit-care {
+        margin-top:18px;
+        padding-top:15px;
       }
-      .rabbit-care-main {
-        grid-template-columns:72px minmax(0,1fr);
-        gap:13px;
-      }
-      .rabbit-care-hay {
-        width:72px;
-        height:80px;
-        padding:7px;
-      }
-      .rabbit-care-actions {
-        grid-column:1/-1;
-        text-align:left;
-      }
-      .rabbit-care-actions small {
-        display:inline-block;
-        margin:0 0 0 9px;
-      }
-      .rabbit-care-numbers {
-        font-size:12px;
+
+      .rc-food {
+        min-height:105px;
       }
     }
+
     @media(prefers-reduced-motion:reduce) {
       .rabbit-care-track i {
         transition:none;
       }
-      .rabbit-care.is-feeding .rabbit-care-hay {
-        animation:none;
-      }
     }
   `;
+
   document.head.append(style);
-  function hayPicture() {
-    return `
-      <svg class="rabbit-care-hay"
-        viewBox="0 0 100 100"
-        role="img"
-        aria-label="${text("提摩西草", "提摩西草", "Timothy hay")}">
-        <path d="M20 80 Q49 92 80 80 L74 91 H27Z"
-          fill="#d6b091" stroke="#92725a" stroke-width="2"/>
-        <g fill="none" stroke-linecap="round">
-          <path d="M46 82 Q28 57 25 27"
-            stroke="#82945d" stroke-width="3"/>
-          <path d="M48 83 Q40 52 44 15"
-            stroke="#94a46c" stroke-width="3"/>
-          <path d="M51 83 Q58 49 64 20"
-            stroke="#82945d" stroke-width="3"/>
-          <path d="M55 83 Q74 56 79 32"
-            stroke="#a8b27c" stroke-width="3"/>
-          <path d="M38 82 Q23 69 14 50"
-            stroke="#a4ad72" stroke-width="3"/>
-          <path d="M60 83 Q77 72 88 52"
-            stroke="#8d9e62" stroke-width="3"/>
-          <path d="m25 43-10-7m12 17 10-10
-                   m17-8-10-8m9 18 11-8
-                   m8-1-7-9m4 22 12-8"
-            stroke="#a2ae72" stroke-width="3"/>
+
+  function foodIcon(key) {
+    const art = {
+      grass: `
+        <path d="M23 42Q12 26 11 8M25 42Q23 22 25 4
+          M27 42Q35 23 39 10"
+          fill="none" stroke="#8c9d61" stroke-width="3"
+          stroke-linecap="round"/>
+        <path d="m13 22-7-6m17 8-7-8m16 7 7-5"
+          fill="none" stroke="#a8b379" stroke-width="2.5"/>
+        <ellipse cx="11" cy="9" rx="3" ry="7"
+          fill="#b7bd86" transform="rotate(-12 11 9)"/>
+        <ellipse cx="25" cy="6" rx="3" ry="7"
+          fill="#b7bd86"/>
+        <ellipse cx="39" cy="11" rx="3" ry="7"
+          fill="#b7bd86" transform="rotate(20 39 11)"/>
+        <path d="M14 34q11 5 22 0l-2 9H17Z"
+          fill="#dcb68e" stroke="#a48161" stroke-width="1.3"/>
+      `,
+      pellets: `
+        <path d="M8 25h34q-2 18-17 18T8 25Z"
+          fill="#e9c5d4" stroke="#a56d85" stroke-width="1.5"/>
+        <ellipse cx="25" cy="25" rx="17" ry="5"
+          fill="#b58b66" stroke="#a56d85" stroke-width="1.3"/>
+        <g fill="#ccb18a" stroke="#947454" stroke-width="1">
+          <rect x="12" y="21" width="8" height="4" rx="2"
+            transform="rotate(-22 12 21)"/>
+          <rect x="24" y="22" width="8" height="4" rx="2"/>
+          <rect x="29" y="17" width="8" height="4" rx="2"
+            transform="rotate(25 29 17)"/>
+          <rect x="18" y="15" width="8" height="4" rx="2"/>
         </g>
-        <g fill="#b7bc86">
-          <ellipse cx="24" cy="25" rx="4" ry="12"
-            transform="rotate(-13 24 25)"/>
-          <ellipse cx="44" cy="17" rx="4" ry="12"
-            transform="rotate(4 44 17)"/>
-          <ellipse cx="65" cy="20" rx="4" ry="12"
-            transform="rotate(15 65 20)"/>
-          <ellipse cx="79" cy="32" rx="4" ry="11"
-            transform="rotate(20 79 32)"/>
-        </g>
-        <path d="M30 76 Q50 82 71 76 L73 84
-                 Q50 92 28 84Z"
-          fill="#e1bc92" stroke="#92725a" stroke-width="1.5"/>
-      </svg>
-    `;
+        <path d="M21 34q4 4 8 0"
+          fill="none" stroke="#a56d85" stroke-width="1.5"/>
+      `,
+      apple: `
+        <path d="M9 18q15-15 32 0
+          q-1 22-16 25Q10 39 9 18Z"
+          fill="#d98983" stroke="#aa655f" stroke-width="1.5"/>
+        <path d="M13 19q12-10 24 0
+          q-2 16-12 20Q15 35 13 19Z"
+          fill="#f3d49d"/>
+        <path d="M25 19v15"
+          stroke="#e5bc83" stroke-width="2"/>
+        <ellipse cx="22" cy="27" rx="1.5" ry="3"
+          fill="#966951" transform="rotate(-20 22 27)"/>
+        <ellipse cx="28" cy="27" rx="1.5" ry="3"
+          fill="#966951" transform="rotate(20 28 27)"/>
+        <path d="M25 13q0-6 5-8"
+          fill="none" stroke="#947454" stroke-width="2"/>
+        <path d="M29 8q7-7 11-1-5 6-11 1Z"
+          fill="#9ead79"/>
+      `
+    };
+
+    return `<svg viewBox="0 0 50 50" aria-hidden="true">
+      ${art[key]}
+    </svg>`;
   }
-  function renderPanel() {
+
+  function draw() {
+    if (!state?.ready || !validCare(state.rabbitCare)) return;
+
     const page = document.body.dataset.page;
     const content = $("#content");
-    if (!content ||
-        !currentState?.ready ||
-        !validCare(currentState.rabbitCare) ||
-        !["home", "settings"].includes(page)) {
+    if (!content) return;
+
+    let host;
+
+    if (page === "home") {
+      // 原本粉色卡片左側的歡迎文字區。
+      host = content.querySelector(".hero > div:first-child");
+    } else if (page === "settings") {
+      host = content;
+    } else {
       return;
     }
+
+    if (!host) return;
+
     let panel = $("#rabbitCarePanel");
+
     if (!panel) {
       panel = document.createElement("section");
       panel.id = "rabbitCarePanel";
       panel.className = "rabbit-care";
-      if (page === "home") {
-        // 首頁放在歡迎區下面。
-        const hero = content.querySelector(".hero");
-        if (hero) hero.after(panel);
-        else content.prepend(panel);
-      } else {
-        content.append(panel);
-      }
     }
-    const care = currentState.rabbitCare;
-    const name = currentState.pet?.name || "Bunny";
-    const message = Date.now() < messageUntil && lastMessage
-      ? lastMessage
-      : defaultMessage(care);
-    const disabled = feeding ||
-      care.grass < 1 ||
-      care.affection >= 100;
-    panel.classList.toggle("is-feeding", feeding);
-    panel.innerHTML = `
+
+    if (panel.parentElement !== host) host.append(panel);
+
+    const care = state.rabbitCare;
+    const rewards = care.foodRewards;
+    const sleeping =
+      Number(state.rabbitLife?.restUntil || 0) > Date.now();
+
+    const disabled = feeding || sleeping || care.affection >= 100;
+
+    const defaultMessage = sleeping
+      ? text(
+          "兔兔瞓緊覺，等佢瞓醒再食啦～",
+          "兔兔正在睡觉，等它睡醒再吃吧～",
+          "Bunny is resting. Feed after the nap."
+        )
+      : text(
+          "揀份食物餵我呀～我已經聞到香味喇！",
+          "选份食物喂我吧～我已经闻到香味啦！",
+          "Pick a little snack for me. I can smell it already!"
+        );
+
+    const shownMessage = Date.now() < messageUntil
+      ? message
+      : defaultMessage;
+
+    const html = `
       <div class="rabbit-care-header">
-        <h2>
-          ${escapeHTML(name)}
-          ${text("的照顧手帳", "的照顾手账", "’s care journal")}
-        </h2>
-        <span class="rabbit-care-level">
-          ${getLevel(care.affection)}
+        <h2>${text("兔兔照顧手帳", "兔兔照顾手账", "Bunny care")}</h2>
+        <span class="rabbit-care-level">${level(care.affection)}</span>
+      </div>
+
+      <div class="rabbit-care-numbers">
+        <span>${text("提摩西草", "提摩西草", "Hay")}
+          <strong>× ${care.grass}</strong>
+        </span>
+        <span>${text("好感度", "好感度", "Affection")}
+          <strong>${care.affection} / 100</strong>
         </span>
       </div>
-      <div class="rabbit-care-main">
-        ${hayPicture()}
-        <div>
-          <div class="rabbit-care-numbers">
-            <span>
-              ${text("提摩西草", "提摩西草", "Timothy hay")}
-              <strong>× ${care.grass}</strong>
-            </span>
-            <span>
-              ${text("好感度", "好感度", "Affection")}
-              <strong>${care.affection} / 100</strong>
-            </span>
-          </div>
-          <div class="rabbit-care-track"
-            role="progressbar"
-            aria-label="${text("好感度", "好感度", "Affection")}"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow="${care.affection}">
-            <i style="width:${care.affection}%"></i>
-          </div>
-          <p class="rabbit-care-message"
-            role="status"
-            aria-live="polite">
-            ${escapeHTML(message)}
-          </p>
-        </div>
-        <div class="rabbit-care-actions">
-          <button type="button"
-            class="primary"
-            data-care-feed
-            ${disabled ? "disabled" : ""}>
-            ${care.affection >= 100
-              ? text("好感度已滿", "好感度已满", "Affection full")
-              : text("餵兔兔", "喂兔兔", "Feed bunny")}
-          </button>
-          <small>
-            ${text(
-              "1 份草 · 好感度 +5",
-              "1 份草 · 好感度 +5",
-              "1 hay · +5 affection"
-            )}
-          </small>
-        </div>
+
+      <div class="rabbit-care-track"
+        role="progressbar"
+        aria-label="${text("好感度", "好感度", "Affection")}"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="${care.affection}">
+        <i style="width:${care.affection}%"></i>
       </div>
-      <p class="rabbit-care-rule">
-        ${text(
-          "新增一筆帳目可獲得 1 份草；修改舊帳不重複發放。好感度滿了便保留草，不會繼續扣除。",
-          "新增一笔账目可获得 1 份草；修改旧账不重复发放。好感度满后保留草，不再扣除。",
-          "Each new record earns 1 hay. Editing records does not earn more. Hay is kept when affection is full."
-        )}
+
+      <div class="rc-foods">
+        ${Object.entries(foods).map(([key, food]) => `
+          <button type="button"
+            class="rc-food"
+            data-food-feed="${key}"
+            ${key === "grass" ? "data-care-feed" : ""}
+            ${disabled || care[key] < 1 ? "disabled" : ""}
+            aria-label="${escapeHTML(foodName(food))} × ${care[key]}">
+            ${foodIcon(key)}
+            <strong>${foodName(food)} × ${care[key]}</strong>
+            <small>♥ +${food.points}</small>
+          </button>
+        `).join("")}
+      </div>
+
+      <p class="rabbit-care-message" role="status" aria-live="polite">
+        ${escapeHTML(shownMessage)}
       </p>
+
+      <details class="rc-rules">
+        <summary>${text("食物點樣拎？", "食物怎么获得？", "How to earn food")}</summary>
+        <div class="rc-rule-row">
+          ${text("升級後累計", "升级后累计", "Since this upgrade")}：
+          ${rewards.count} ${text("筆帳", "笔账", "records")}
+          · ${text("收入", "收入", "income")}
+          ${money(rewards.incomeCents)}
+        </div>
+
+        ${Object.entries(foods).map(([, food]) => `
+          <div class="rc-rule-row">
+            ${foodName(food)}：
+            ${text("每", "每", "Every")}
+            ${food.count}
+            ${text("筆帳，或收入", "笔账，或收入", "records, or income of")}
+            ${money(food.income * 100)}
+          </div>
+        `).join("")}
+
+        <div class="rc-rule-row">
+          ${text(
+            "兩條進度取較高者，同一級不重複發放。蘋果乾是遊戲中的少量零食獎勵。",
+            "两条进度取较高者，同一级不重复发放。苹果干是游戏中的少量零食奖励。",
+            "Uses the higher of the two progress totals. Each milestone pays once. Apple is an occasional in-game treat."
+          )}
+        </div>
+      </details>
     `;
-  }
-  function announce(message) {
-    const toast = $("#toast");
-    if (!toast) return;
-    toast.textContent = message;
-    setTimeout(() => {
-      // 不蓋掉其他功能稍後顯示的訊息。
-      if (toast.textContent === message) {
-        toast.textContent = "";
-      }
-    }, 4200);
-  }
-  async function sync() {
-    if (busy || feeding) return;
-    busy = true;
-    try {
-      const result = await updateCare();
-      if (!result.state) return;
-      currentState = result.state;
-      if (result.rewarded > 0) {
-        lastMessage = text(
-          `記帳獎勵收到！多咗 ${result.rewarded} 份提摩西草，兔兔望到眼都光埋～`,
-          `记账奖励收到！多了 ${result.rewarded} 份提摩西草，兔兔眼睛都亮啦～`,
-          `${result.rewarded} hay earned! Your bunny’s eyes just lit up.`
-        );
-        messageUntil = Date.now() + 6000;
-        announce(lastMessage);
-      }
-      renderPanel();
-      if (result.changed) {
-        channel?.postMessage("updated");
-      }
-    } catch (error) {
-      console.error("Rabbit care:", error);
-    } finally {
-      busy = false;
+
+    // 不反覆重畫，保留使用者正在展開的規則說明。
+    if (panel._foodHTML !== html) {
+      const wasOpen = panel.querySelector("details")?.open;
+      panel.innerHTML = html;
+      if (wasOpen) panel.querySelector("details").open = true;
+      panel._foodHTML = html;
     }
   }
-  function scheduleSync() {
+
+  function tell(value) {
+    message = value;
+    messageUntil = Date.now() + 6500;
+    draw();
+  }
+
+  function publish(result) {
+    state = result.state;
+
+    // 同頁擴充程式可讀取；不要求 app.js 重畫整個首頁。
+    document.dispatchEvent(new CustomEvent("bunny-care-updated", {
+      detail: {
+        affection: state.rabbitCare.affection,
+        feedCount: state.rabbitCare.feedCount,
+        lastFood: state.rabbitCare.lastFood || ""
+      }
+    }));
+
+    if (result.changed) channel?.postMessage("updated");
+  }
+
+  async function sync() {
+    if (syncing || feeding || document.hidden) return;
+    syncing = true;
+
+    try {
+      const result = await transaction();
+      if (!result?.state) return;
+
+      publish(result);
+
+      const earned = Object.entries(result.earned)
+        .filter(([, amount]) => amount > 0)
+        .map(([key, amount]) => `${foodName(foods[key])} +${amount}`);
+
+      if (earned.length) {
+        tell(text(
+          "記帳獎勵到喇！",
+          "记账奖励到啦！",
+          "New rewards! "
+        ) + earned.join("、"));
+      } else {
+        draw();
+      }
+    } catch (error) {
+      console.error("Food care:", error);
+    } finally {
+      syncing = false;
+    }
+  }
+
+  function schedule() {
     if (scheduled) return;
     scheduled = true;
+
     setTimeout(() => {
       scheduled = false;
       sync();
-    }, 120);
+    }, 150);
   }
+
   document.addEventListener("click", async event => {
-    const button = event.target.closest("[data-care-feed]");
-    if (!button || feeding || busy) return;
+    const button = event.target.closest("[data-food-feed]");
+    if (!button || feeding || button.disabled) return;
+
+    const key = button.dataset.foodFeed;
     feeding = true;
-    renderPanel();
+    draw();
+
     try {
-      const result = await updateCare("feed");
-      if (!result.state) return;
-      currentState = result.state;
+      // 先讀寫最新資料，再決定是否真的扣食物。
+      const result = await transaction("feed", key);
+      if (!result?.state) return;
+
+      publish(result);
+
       if (result.fed) {
-        const care = currentState.rabbitCare;
-        lastMessage = care.affection >= 100
-          ? text(
-              "食飽飽，最鍾意你！好感度滿晒喇，兔兔要黐住你～",
-              "吃饱饱，最喜欢你！好感度满啦，兔兔要黏着你～",
-              "Happy tummy, happy bunny! Affection is full. I’m sticking with you!"
-            )
-          : text(
-              "嚼嚼嚼……呢份草好香呀！又鍾意你多啲喇～",
-              "嚼嚼嚼……这份草好香呀！又更喜欢你一点啦～",
-              "Munch munch… lovely hay! I like you a little more already."
-            );
-        messageUntil = Date.now() + 6000;
-        renderPanel();
-        announce(lastMessage);
-        if (result.changed) {
-          channel?.postMessage("updated");
+        const lines = {
+          grass: [
+            "嚼嚼嚼～提摩西草好香，兔兔食得好滿足！",
+            "嚼嚼嚼～提摩西草好香，兔兔吃得好满足！",
+            "Munch munch! Lovely Timothy hay!"
+          ],
+          pellets: [
+            "粒粒脆卜卜！兔兔慢慢食，唔會一啖吞晒㗎～",
+            "粒粒脆脆的！兔兔慢慢吃，不会一口吞掉哦～",
+            "Crunchy pellets! Slowly, one little bite at a time."
+          ],
+          apple: [
+            "蘋果香呀！少少就夠喇，兔兔留返個肚食草～",
+            "苹果好香！一点点就够啦，兔兔留着肚子吃草～",
+            "Apple! Just a little treat—saving room for hay."
+          ]
+        };
+
+        tell(text(...lines[key]) + `　♥ +${result.delta}`);
+
+        const messageElement = $("#rabbitCarePanel .rabbit-care-message");
+        if (messageElement) {
+          const badge = document.createElement("span");
+          badge.className = "rc-feedback";
+          badge.textContent = `+${result.delta}`;
+          messageElement.append(badge);
         }
-        // 配合你目前的 petting.js，讓畫面上的兔兔輕輕跳一下。
-        document.querySelectorAll(
-          ".hero svg.rabbit, #content > .layout svg.rabbit"
-        ).forEach(rabbit => {
-          rabbit.classList.add("pet-motion-hop");
-          setTimeout(() => {
-            rabbit.classList.remove("pet-motion-hop");
-          }, 800);
-        });
+
+        // 既有首頁動畫會偵測 feedCount，播放進食。
         await new Promise(resolve => setTimeout(resolve, 1100));
       } else {
-        lastMessage = result.error === "full"
+        tell(result.error === "full"
           ? text(
-              "兔兔已經超級鍾意你喇！啲草留返下次先～",
-              "兔兔已经超级喜欢你啦！草先留着～",
-              "Your bunny already adores you. Keep that hay for later!"
+              "好感度滿晒喇！啲食物幫你留返喺度～",
+              "好感度满啦！食物替你留着～",
+              "Affection is full. Your food is kept for later!"
             )
           : text(
-              "草草用晒喇，記一筆帳再返嚟啦～",
-              "草草用完啦，记一笔账再回来吧～",
-              "No hay left. Add a record and come back!"
-            );
-        messageUntil = Date.now() + 5000;
-        announce(lastMessage);
+              "呢款食物食晒喇，記帳累積返啲先～",
+              "这款食物吃完啦，先记账积攒一些吧～",
+              "None left. Earn more with your journal!"
+            ));
       }
     } catch (error) {
-      console.error(error);
-      announce(text(
-        "今次未餵到，請再試一次。",
-        "这次没喂成功，请再试一次。",
-        "Couldn’t feed your bunny. Please try again."
+      console.error("Feed:", error);
+      tell(text(
+        "今次未餵到，食物未確認扣除，請重新整理查看。",
+        "这次未喂成功，请刷新查看食物数量。",
+        "Feeding failed. Refresh to check your inventory."
       ));
     } finally {
       feeding = false;
-      renderPanel();
-      scheduleSync();
+      draw();
+      schedule();
     }
   });
-  /*
-   * app.js 記帳後會重新繪製 #content。
-   * 監察主畫面更新；忽略照顧區自己的更新，避免無限循環。
-   */
-  const observer = new MutationObserver(records => {
-    const relevant = records.some(record => {
-      const target = record.target;
-      return target instanceof Element &&
-        !target.closest("#rabbitCarePanel") &&
-        (
-          target.id === "content" ||
-          target.closest("#content") ||
-          !$("#rabbitCarePanel")
+
+  const observer = new MutationObserver(changes => {
+    const relevant = changes.some(change => {
+      const target = change.target;
+
+      if (!(target instanceof Element)) return false;
+      if (target.closest("#rabbitCarePanel")) return false;
+
+      return target.id === "content" ||
+        [...change.addedNodes].some(node =>
+          node.nodeType === 1 && (
+            node.matches?.(".hero") ||
+            node.querySelector?.(".hero")
+          )
         );
     });
-    if (relevant) scheduleSync();
+
+    if (relevant) schedule();
   });
+
   observer.observe(document.body, {
     childList: true,
     subtree: true
   });
-  if (channel) {
-    channel.onmessage = () => scheduleSync();
-  }
-  window.addEventListener("focus", scheduleSync);
-  // 背景分頁恢復時及少數畫面未重新繪製時也能補上獎勵。
-  setInterval(() => {
-    if (!document.hidden) scheduleSync();
-  }, 5000);
-  scheduleSync();
+
+  if (channel) channel.onmessage = schedule;
+  window.addEventListener("focus", schedule);
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) schedule();
+  });
+
+  setInterval(schedule, 2500);
+  schedule();
 })();

@@ -18,6 +18,7 @@
   let taps = [];
   let lastFeed = null;
   let eatUntil = 0;
+  let eatingFood = "grass";
   let faceUntil = 0;
   let mood = "calm";
   let poseX = 145;
@@ -26,6 +27,12 @@
   let lastPet = 0;
   let messageTimer;
   let gesture = null;
+  // 每次進入首頁，兔兔先睡著。
+let welcomeSleeping = true;
+let welcomeWaking = false;
+let greetingTimer = null;
+let knownEntryIds = null;
+
 
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -405,10 +412,267 @@
       <path d="M78 116h10m27 0h10"/>`,
     sleep:`<path d="M77 116q6 3 12 0m25 0q6 3 12 0"/>`
   };
+/* 真正的側躺睡姿，不再壓扁站姿 */
+const sleepingDrawings = new WeakMap();
+
+function showSleepingPose() {
+  const actor = scene?.querySelector("[data-bh-pet]");
+  if (!actor || sleepingDrawings.has(actor)) return;
+
+  const head = [...actor.children].find(element =>
+    element.localName === "ellipse" &&
+    element.getAttribute("cx") === "101" &&
+    element.getAttribute("cy") === "117"
+  );
+
+  const fur = head?.getAttribute("fill") || "#fff8ec";
+  const ink = "#6d574f";
+  const cream = "#fffaf1";
+
+  // 從原本耳形判斷，保留垂耳兔的特徵。
+  const paths = [...actor.querySelectorAll("path")];
+
+  const lop = paths.some(element =>
+    /^M65 88/.test((element.getAttribute("d") || "").trim())
+  );
+
+  const fuzzy = paths.some(element =>
+    /^m61 110/.test((element.getAttribute("d") || "").trim())
+  );
+
+  const dutch = paths.some(element =>
+    /^m101 77/.test((element.getAttribute("d") || "").trim())
+  );
+
+  const hidden = [...actor.children].map(element => ({
+    element,
+    visibility: element.getAttribute("visibility")
+  }));
+
+  hidden.forEach(({element}) => {
+    element.setAttribute("visibility", "hidden");
+  });
+
+  const drawing = document.createElementNS(
+    "http://www.w3.org/2000/svg", "g"
+  );
+
+  drawing.setAttribute("data-real-sleep", "");
+  drawing.setAttribute("pointer-events", "all");
+
+  drawing.innerHTML = `
+    <!-- 透明觸摸區：睡兔的頭、身體和爪子都能點 -->
+    <rect
+      x="30"
+      y="115"
+      width="190"
+      height="90"
+      rx="30"
+      fill="transparent"
+      pointer-events="all"
+    />
+
+    <!-- 收起身體，背部自然拱起 -->
+
+    <ellipse cx="142" cy="163" rx="63" ry="37"
+      fill="${fur}" stroke="${ink}" stroke-width="1.7"/>
+
+    ${dutch ? `
+      <path d="M105 133 Q122 124 139 128
+        L145 197 Q121 203 105 189Z"
+        fill="${cream}"/>
+    ` : ""}
+
+    <!-- 後腿收在身體旁 -->
+    <ellipse cx="171" cy="177" rx="30" ry="21"
+      fill="${fur}" stroke="${ink}" stroke-width="1.5"/>
+
+    <!-- 小尾巴 -->
+    <circle cx="205" cy="172" r="${fuzzy ? 16 : 13}"
+      fill="${cream}" stroke="${ink}" stroke-width="1.5"/>
+
+    <!-- 頭下方伸出的前爪 -->
+    <path d="M80 180 Q67 183 59 190
+      Q54 197 65 199 L104 199 Q117 196 111 189
+      Q104 182 94 181Z"
+      fill="${dutch ? cream : fur}"
+      stroke="${ink}" stroke-width="1.5"/>
+
+    <path d="M78 193v5 M87 193v5"
+      fill="none" stroke="${ink}" stroke-width="1"
+      stroke-linecap="round"/>
+
+    <!-- 遠側耳朵自然往後放 -->
+    <path d="M94 151 Q112 120 154 129
+      Q170 133 157 141 L114 163Z"
+      fill="${fur}" stroke="${ink}" stroke-width="1.6"/>
+
+    <path d="M113 145 Q135 129 153 135"
+      fill="none" stroke="#deb5b3" stroke-width="6"
+      stroke-linecap="round"/>
+
+    <!-- 頭靠在前爪上 -->
+    <ellipse cx="83" cy="166" rx="39" ry="29"
+      transform="rotate(-9 83 166)"
+      fill="${fur}" stroke="${ink}" stroke-width="1.7"/>
+
+    ${dutch ? `
+      <path d="M71 139 Q72 156 58 171
+        Q67 192 85 193 Q87 173 79 158Z"
+        fill="${cream}"/>
+    ` : ""}
+
+    ${lop ? `
+      <!-- 垂耳兔的耳朵鬆鬆地搭在地上 -->
+      <path d="M102 144 Q133 143 143 163
+        Q152 180 140 189 Q130 194 122 181
+        L102 160Z"
+        fill="${fur}" stroke="${ink}" stroke-width="1.6"/>
+      <path d="M116 156 Q133 165 136 181"
+        fill="none" stroke="#deb5b3" stroke-width="6"
+        stroke-linecap="round"/>
+    ` : `
+      <!-- 立耳兔睡覺時把耳朵向後放低 -->
+      <path d="M99 146 Q132 124 163 142
+        Q174 150 161 153 L112 163Z"
+        fill="${fur}" stroke="${ink}" stroke-width="1.6"/>
+      <path d="M116 150 Q141 139 158 147"
+        fill="none" stroke="#deb5b3" stroke-width="5"
+        stroke-linecap="round"/>
+    `}
+
+    ${fuzzy ? `
+      <!-- 長毛兔額頭的小毛簇 -->
+      <path d="m60 145 6-9 7 5 8-9 7 7 9-5 5 9"
+        fill="${fur}" stroke="${ink}" stroke-width="1.2"/>
+    ` : ""}
+
+    <!-- 熟睡的閉眼，頭朝向左邊 -->
+    <path d="M60 165 Q67 172 75 166"
+      fill="none" stroke="${ink}" stroke-width="2.3"
+      stroke-linecap="round"/>
+
+    <path d="m61 168-3 2 m16-2 3 1"
+      fill="none" stroke="${ink}" stroke-width="1.2"
+      stroke-linecap="round"/>
+
+    <!-- 小鼻子與嘴巴 -->
+    <path d="M47 176 Q51 172 55 176 L51 180Z"
+      fill="#b57c82"/>
+    <path d="M51 180 Q55 185 60 182"
+      fill="none" stroke="${ink}" stroke-width="1.2"
+      stroke-linecap="round"/>
+
+    <ellipse cx="76" cy="179" rx="9" ry="4.5"
+      fill="#e9a6b6" opacity=".55"/>
+
+    <!-- 鬚鬚 -->
+    <path d="m47 181-14-2 m15 6-13 2"
+      fill="none" stroke="${ink}" stroke-width="1"
+      stroke-linecap="round"/>
+
+    <!-- 睡眠符號 -->
+    <g fill="var(--accent,#a64f70)"
+      font-family="Nunito,sans-serif" font-weight="800">
+      <text x="68" y="118" font-size="12" opacity=".6">z</text>
+      <text x="84" y="99" font-size="17" opacity=".75">z</text>
+      <text x="106" y="78" font-size="22">Z</text>
+    </g>
+  `;
+
+  actor.append(drawing);
+  sleepingDrawings.set(actor, {hidden, drawing});
+}
+
+function hideSleepingPose() {
+  const actor = scene?.querySelector("[data-bh-pet]");
+  const saved = actor && sleepingDrawings.get(actor);
+  if (!saved) return;
+
+  saved.hidden.forEach(({element, visibility}) => {
+    if (visibility === null) {
+      element.removeAttribute("visibility");
+    } else {
+      element.setAttribute("visibility", visibility);
+    }
+  });
+
+  saved.drawing.remove();
+  sleepingDrawings.delete(actor);
+}
+function eatingArtwork() {
+  if (eatingFood === "pellets") {
+    return `
+      <g data-bh-food pointer-events="none">
+        <!-- 嘴邊一粒兔糧 -->
+        <rect x="87" y="136" width="14" height="7" rx="3.5"
+          fill="#bf966b" stroke="#916b48" stroke-width="1.2"
+          transform="rotate(-15 94 139)"/>
+
+        <!-- 下方的兔糧碗 -->
+        <ellipse cx="72" cy="188" rx="25" ry="7"
+          fill="#ba9069"/>
+        <path d="M47 188q3 20 25 20t25-20"
+          fill="#e8b6ca" stroke="#a16c83" stroke-width="1.5"/>
+
+        <g fill="#d1af83" stroke="#99734f" stroke-width=".8">
+          <rect x="54" y="182" width="10" height="5" rx="2.5"/>
+          <rect x="66" y="178" width="10" height="5" rx="2.5"
+            transform="rotate(18 71 181)"/>
+          <rect x="78" y="182" width="10" height="5" rx="2.5"/>
+        </g>
+
+        <circle data-bh-crumb cx="91" cy="151" r="1.7"
+          fill="#c49b70"/>
+      </g>
+    `;
+  }
+
+  if (eatingFood === "apple") {
+    return `
+      <g data-bh-food pointer-events="none">
+        <!-- 嘴邊的小片蘋果乾 -->
+        <path d="M78 136q11-9 22 1
+          q-3 16-12 17-9-4-10-18Z"
+          fill="#d88b80" stroke="#a86b59" stroke-width="1.2"/>
+        <path d="M82 138q7-5 14 0
+          q-3 10-8 12-5-3-6-12Z"
+          fill="#f3d5a0"/>
+        <ellipse cx="89" cy="141" rx="1.2" ry="2"
+          fill="#996c4b"/>
+
+        <!-- 小爪子捧著蘋果乾 -->
+        <ellipse cx="82" cy="154" rx="8" ry="5"
+          fill="#fff5e8" stroke="#8f7163" stroke-width="1.1"/>
+        <path d="M114 91l2-5 2 5 5 2-5 2-2 5-2-5-5-2Z"
+          fill="#dfa06b"/>
+      </g>
+    `;
+  }
+
+  return `
+    <g data-bh-food data-bh-hay
+      stroke="#8e9e60" stroke-width="2"
+      stroke-linecap="round" pointer-events="none">
+      <path d="m101 139-37 9m37-9-39-2m39 2-31 18"/>
+      <path d="m73 146-6-5m12-1-3 8m-2 5-5-2"
+        stroke="#b2b77b" stroke-width="1.5"/>
+    </g>
+  `;
+}
 
   function setFace(value="calm") {
-    if(!scene?.isConnected) return;
-    mood=value;
+  if (!scene?.isConnected) return;
+  mood = value;
+
+  if (value === "sleep") {
+    showSleepingPose();
+    return;
+  }
+
+  // 清醒時恢復原本兔子的身體和表情。
+  hideSleepingPose();
+
 
     let eye=eyes[value]||eyes.calm;
     let mouth=`<path d="M97 137q5 5 10 0"/>`;
@@ -417,11 +681,19 @@
     if(value==="surprise") mouth=`<ellipse cx="102" cy="139" rx="3" ry="4" fill="#b77c87"/>`;
     if(value==="angry") mouth=`<path d="M97 141q5-6 10 0"/>`;
     if(value==="sleep") mouth=`<path d="M99 139h6"/>`;
-    if(value==="eat"||value==="drink") {
-      eye=eyes.enjoy;
-      mouth=`<ellipse data-bh-mouth cx="102" cy="139" rx="4" ry="3"
-        fill="#b77c87"/>`;
-    }
+    if (value === "eat" || value === "drink") {
+  // 蘋果乾：開心瞇眼；草和兔糧：舒服閉眼。
+  eye = value === "eat" && eatingFood === "apple"
+    ? eyes.happy
+    : eyes.enjoy;
+
+  mouth = `
+    <ellipse data-bh-mouth cx="102" cy="139"
+      rx="${eatingFood === "pellets" ? 3 : 4}" ry="3"
+      fill="#b77c87"/>
+  `;
+}
+
 
     scene.querySelector("[data-bh-face]").innerHTML=`
       <g fill="none" stroke="#6d5048" stroke-width="2"
@@ -444,12 +716,8 @@
         <text x="174" y="59" fill="var(--accent)"
           font-size="19" font-family="Nunito">Z</text>
       `:""}
-      ${value==="eat"?`
-        <g data-bh-hay stroke="#8e9e60" stroke-width="2"
-          stroke-linecap="round">
-          <path d="m101 139-37 9m37-9-39-2m39 2-31 18"/>
-        </g>
-      `:""}
+      ${value === "eat" ? eatingArtwork() : ""}
+
     `;
   }
 
@@ -534,6 +802,126 @@
     scene.append(el);
     setTimeout(()=>el.remove(),1500);
   }
+async function wakeWelcome(reason = "touch") {
+  if (
+    !welcomeSleeping ||
+    welcomeWaking ||
+    !scene?.isConnected
+  ) {
+    return false;
+  }
+
+  const target = scene;
+  const previousBusy = busy;
+
+  welcomeSleeping = false;
+  welcomeWaking = true;
+  busy = true;
+
+  clearTimeout(greetingTimer);
+  hearts(false);
+
+  try {
+    // 保留真正的側躺睡姿，先輕輕動一下。
+    setFace("sleep");
+
+    line(say(
+      "嗯……邊個輕輕叫我呀……",
+      "嗯……是谁轻轻叫我呀……",
+      "Mmm… who’s gently calling me…?"
+    ));
+
+    if (!reduce.matches) {
+      await animate(target, 500, p => {
+        const wiggle = Math.sin(p * Math.PI * 2);
+
+        target.querySelector("[data-bh-pose]").setAttribute(
+          "transform",
+          `translate(0 ${-Math.sin(p * Math.PI) * 2})
+           rotate(${wiggle * 1.5} 120 190)`
+        );
+      });
+    } // ← 你目前的程式缺少的就是這個括號。
+
+    if (!target.isConnected || target !== scene) {
+      return true;
+    }
+
+    // 移除睡姿圖，恢復原本兔子，再睜眼。
+    position();
+    setFace("surprise");
+
+    if (!reduce.matches) {
+      await animate(target, 450, p => {
+        position(
+          145,
+          65 - Math.sin(p * Math.PI) * 5,
+          1,
+          1,
+          Math.sin(p * Math.PI) * 2
+        );
+      });
+    }
+
+    if (!target.isConnected || target !== scene) {
+      return true;
+    }
+
+    setFace("happy");
+    hearts(true);
+    faceUntil = Date.now() + 5500;
+
+    const name = latest?.profile?.name || "";
+
+    line(
+      reason === "record"
+        ? say(
+            `咦，${name} 記好帳喇？兔兔瞓醒都要讚你一下～`,
+            `咦，${name} 记好账啦？兔兔睡醒也要夸夸你～`,
+            `Oh, ${name}, you saved a record! Your sleepy bunny is proud of you!`
+          )
+        : say(
+            `係 ${name} 呀！兔兔醒喇～今日都要陪住你！`,
+            `是 ${name} 呀！兔兔醒啦～今天也要陪着你！`,
+            `It’s you, ${name}! I’m awake now. Let’s spend the day together!`
+          )
+    );
+
+    greetingTimer = setTimeout(() => {
+      if (target === scene && target.isConnected) {
+        hearts(false);
+      }
+    }, 4500);
+
+    return true;
+
+  } catch (error) {
+    console.error("兔兔醒來動畫：", error);
+
+    // 即使動畫中斷，也避免兔兔一直卡在睡姿。
+    if (target === scene && target.isConnected) {
+      setFace("happy");
+      faceUntil = Date.now() + 3000;
+
+      line(say(
+        "兔兔醒喇～我喺度陪你呀！",
+        "兔兔醒啦～我在这里陪你呀！",
+        "I’m awake! Your bunny is right here."
+      ));
+    }
+
+    return true;
+
+  } finally {
+    welcomeWaking = false;
+    busy = previousBusy;
+
+    if (target === scene && target.isConnected) {
+      position();
+    }
+  }
+}
+
 
   function resting() {
     return Number(latest?.rabbitLife?.restUntil)>Date.now();
@@ -560,7 +948,7 @@
 
       if(!busy) {
         const t=(time-began)/1000;
-        const sleep=resting();
+        const sleep = welcomeSleeping || resting();
         const eating=!sleep&&Date.now()<eatUntil;
 
         let desired;
@@ -575,23 +963,72 @@
         }
 
         const breath=reduce.matches?1:1+Math.sin(t*2)*.009;
-        position(145,sleep?69:65,breath,1,sleep?-3:0);
+        position(145, sleep ? 69 : 65, breath, 1, sleep ? -3 : 0);
+
+if (sleep) {
+  // 側躺睡姿本身已畫好，只做非常輕的呼吸位移。
+  // 保持原比例，不拉扁身體。
+  const breathing = reduce.matches
+    ? 0
+    : Math.sin(t * 1.7) * 1.2;
+
+  target.querySelector("[data-bh-pose]").setAttribute(
+    "transform",
+    `translate(0 ${breathing})`
+  );
+}
+
 
         const ears=target.querySelector("[data-bh-ears]");
-        if(ears) ears.setAttribute(
-          "transform",
-          `rotate(${reduce.matches?0:Math.sin(t*2.6)*1.8} 106 93)`
-        );
+        if (ears) {
+  // 睡覺時耳朵少動，清醒後才活潑地擺。
+  const earAngle = reduce.matches ? 0 :
+    sleep ? Math.sin(t * .8) * .35 :
+    Math.sin(t * 2.6) * 1.8;
 
-        const mouth=target.querySelector("[data-bh-mouth]");
-        if(mouth) mouth.setAttribute(
-          "ry",String(1.5+(Math.sin(t*19)+1)*1.4)
-        );
+  ears.setAttribute(
+    "transform",
+    `rotate(${earAngle} 106 93)`
+  );
+}
 
-        const hay=target.querySelector("[data-bh-hay]");
-        if(hay) hay.setAttribute(
-          "transform",`translate(${Math.sin(t*18)*1.5} 0)`
-        );
+        const mouth = target.querySelector("[data-bh-mouth]");
+
+if (mouth) {
+  // 草慢慢嚼、兔糧快速咔嚓、蘋果乾小口咬。
+  const speed = eatingFood === "pellets" ? 25 :
+    eatingFood === "apple" ? 13 : 18;
+
+  const chew = reduce.matches ? .5 :
+    (Math.sin(t * speed) + 1) / 2;
+
+  mouth.setAttribute(
+    "ry",
+    String(1 + chew * (eatingFood === "pellets" ? 1.8 : 3))
+  );
+}
+
+const food = target.querySelector("[data-bh-food]");
+
+if (food) {
+  const movement = reduce.matches ? 0 :
+    Math.sin(t * (eatingFood === "pellets" ? 25 : 13));
+
+  food.setAttribute(
+    "transform",
+    `translate(${movement * .8} ${Math.abs(movement) * .7})`
+  );
+
+  const crumb = food.querySelector("[data-bh-crumb]");
+
+  if (crumb) {
+    crumb.setAttribute(
+      "opacity",
+      reduce.matches ? ".6" : String((Math.sin(t * 12) + 1) / 2)
+    );
+  }
+}
+
       }
 
       raf=requestAnimationFrame(frame);
@@ -835,6 +1272,12 @@ async function ball(target) {
 
   async function activity(action) {
     if(busy||!scene?.isConnected) return;
+    // 第一次按遊戲圖標：先打招呼，這次不立即開始遊戲。
+if (welcomeSleeping) {
+  await wakeWelcome("touch");
+  return;
+}
+
     const target=scene;
     busy=true;
 
@@ -900,6 +1343,10 @@ if(reduce.matches) {
 
   async function pet(part="head",double=false) {
     if(busy||!scene?.isConnected) return;
+    if (welcomeSleeping) {
+  await wakeWelcome("touch");
+  return;
+}
     const now=Date.now();
 
     try {
@@ -1090,11 +1537,21 @@ if(reduce.matches) {
     setFace("calm");
     affectionLabel();
 
-    line(say(
-      "我喺度呀～記帳定陪我玩一陣先？",
-      "我在这里呀～先记账还是陪我玩一会儿？",
-      "Here I am! Journal first, or a little playtime?"
-    ));
+    if (welcomeSleeping) {
+  setFace("sleep");
+
+  line(say(
+    "呼……兔兔瞓緊覺。輕輕摸一下，或者記筆帳叫醒我呀～",
+    "呼……兔兔正在睡觉。轻轻摸一下，或者记笔账叫醒我吧～",
+    "Zzz… bunny is napping. Give me a gentle pet, or save a record to wake me."
+  ));
+} else {
+  line(say(
+    "我醒咗喇～今日都要陪住你！",
+    "我醒啦～今天也要陪着你！",
+    "I’m awake! Ready to spend the day with you."
+  ));
+}
 
     startIdle(stage);
   }
@@ -1164,36 +1621,100 @@ if(reduce.matches) {
   window.addEventListener("blur",()=>gesture=null);
 
   async function poll() {
-    if(polling||document.hidden) return;
-    polling=true;
+  if (polling || document.hidden) return;
+  polling = true;
 
-    try {
-      const state=await read();
-      if(!state?.ready) return;
+  try {
+    const state = await read();
+    if (!state?.ready) return;
 
-      latest=state;
-      const count=state.rabbitCare?.feedCount;
+    const newIds = new Set(state.entries.map(entry => entry.id));
 
-      if(Number.isSafeInteger(count)) {
-        if(lastFeed!==null&&count>lastFeed) {
-          eatUntil=Date.now()+5500;
-          if(!busy) line(say(
-            "嚼嚼嚼……呢份草好香呀！",
-            "嚼嚼嚼……这份草好香呀！",
-            "Munch munch… lovely hay!"
-          ));
-        }
-        lastFeed=count;
-      }
+    const hasNewRecord = knownEntryIds !== null &&
+      state.entries.some(entry => !knownEntryIds.has(entry.id));
 
-      mount();
-      affectionLabel();
-    } catch(error) {
-      console.error("Bunny home:",error);
-    } finally {
-      polling=false;
+    knownEntryIds = newIds;
+    latest = state;
+
+    // 先建立首頁兔兔，確保後面的喚醒和餵食有畫面可操作。
+    mount();
+
+    if (hasNewRecord && welcomeSleeping && scene?.isConnected) {
+      await wakeWelcome("record");
     }
+
+    const count = state.rabbitCare?.feedCount;
+
+    if (Number.isSafeInteger(count)) {
+      if (lastFeed === null || count < lastFeed) {
+        // 首次載入或恢復舊備份只建立基準，不重播舊餵食。
+        lastFeed = count;
+      } else if (
+        count > lastFeed &&
+        !busy &&
+        scene?.isConnected
+      ) {
+        /*
+         * 活動動畫進行中先不更新 lastFeed。
+         * 下一次輪詢再播放，避免餵食被遊戲動畫吃掉。
+         */
+        const foodKey = state.rabbitCare?.lastFood;
+
+        eatingFood = ["grass", "pellets", "apple"].includes(foodKey)
+          ? foodKey
+          : "grass";
+
+        if (welcomeSleeping) {
+          await wakeWelcome("touch");
+        }
+
+        if (!resting() && scene?.isConnected) {
+          const durations = {
+            grass: 6500,
+            pellets: 5200,
+            apple: 5800
+          };
+
+          eatUntil = Date.now() + durations[eatingFood];
+          faceUntil = 0;
+
+          // 即使上一個狀態也是 eat，也強制換成這次的食物。
+          hearts(false);
+          setFace("eat");
+          lastFeed = count;
+
+          const lines = {
+            grass: [
+              "嚼嚼嚼～長長嘅草要慢慢食，食完先陪你玩呀！",
+              "嚼嚼嚼～长长的草要慢慢吃，吃完再陪你玩呀！",
+              "Munch munch… long hay takes little bites. Playtime after lunch!"
+            ],
+            pellets: [
+              "咔嚓咔嚓！粒粒都香～兔兔一粒一粒慢慢食。",
+              "咔嚓咔嚓！每一粒都香～兔兔一粒一粒慢慢吃。",
+              "Crunch crunch! One lovely little pellet at a time."
+            ],
+            apple: [
+              "嘩，蘋果乾！捧實先～食一小片，開心到瞇埋眼喇！",
+              "哇，苹果干！先捧好～吃一小片，开心得眯起眼睛啦！",
+              "Apple! Let me hold my little slice. My eyes are smiling!"
+            ]
+          };
+
+          line(say(...lines[eatingFood]));
+        }
+      }
+    }
+
+    affectionLabel();
+
+  } catch (error) {
+    console.error("Bunny home:", error);
+  } finally {
+    polling = false;
   }
+}
+
 
   function schedule() {
     if(scheduled||document.body.dataset.page!=="home") return;
