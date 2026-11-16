@@ -792,3 +792,228 @@ footer{max-width:1180px;margin:0 auto;padding:0 28px 24px;text-align:center;colo
     gap: 18px;
   }
 }
+/* 手機首頁：左側今日收支＋記帳，右側 2×2 互動圖標 */
+@media (max-width: 760px) {
+
+  body[data-page="home"] .hero.bh-open {
+    position: relative;
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 14px !important;
+    gap: 0 !important;
+    overflow: hidden;
+  }
+
+  /* 讓歡迎文字、記帳按鈕和餵食區可以分開排序 */
+  body[data-page="home"]
+  .hero.bh-open > div:first-child {
+    display: contents !important;
+  }
+
+  body[data-page="home"]
+  .hero.bh-open > div:first-child > .tag {
+    display: none !important;
+  }
+
+  /* ---------- 右上角：四個圖標排成兩行 ---------- */
+
+  body[data-page="home"]
+  .hero.bh-open .bh-actions {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+
+    display: grid !important;
+    grid-template-columns: repeat(2, 44px) !important;
+    grid-template-rows: repeat(2, 44px);
+    gap: 3px 5px !important;
+
+    width: 93px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 5;
+  }
+
+  body[data-page="home"]
+  .hero.bh-open .bh-actions button {
+    display: grid;
+    place-items: center;
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 4px !important;
+    border-radius: 12px;
+  }
+
+  body[data-page="home"]
+  .hero.bh-open .bh-actions button svg {
+    width: 35px !important;
+    height: 35px !important;
+  }
+
+  /* 手機不彈出懸浮標籤，避免遮住第二行圖標 */
+  body[data-page="home"]
+  .hero.bh-open .bh-actions button::after {
+    display: none !important;
+  }
+
+  /* ---------- 左上角：今日支出、今日入賬 ---------- */
+
+  body[data-page="home"]
+  .hero.bh-open > .ht-summary {
+    position: static !important;
+    order: 0 !important;
+
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+
+    /* 右側保留給 2×2 圖標 */
+    width: calc(100% - 104px) !important;
+    max-width: none !important;
+    min-height: 45px;
+
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 9px !important;
+    border: 0 !important;
+  }
+
+  body[data-page="home"] .ht-summary .ht-item {
+    min-width: 0;
+  }
+
+  body[data-page="home"] .ht-summary .ht-item span {
+    font-size: 11px !important;
+    line-height: 1.5;
+  }
+
+  body[data-page="home"] .ht-summary .ht-item strong {
+    margin-top: 3px;
+    font-size: clamp(14px, 4vw, 20px) !important;
+    line-height: 1.25;
+    letter-spacing: -.4px;
+    overflow-wrap: anywhere;
+  }
+
+  /* ---------- 今日收支下面：新增記帳、生活圈 ---------- */
+
+  body[data-page="home"]
+  .hero.bh-open > div:first-child > .hero-actions {
+    order: 1 !important;
+
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    width: calc(100% - 104px) !important;
+    min-height: 43px;
+    margin: 7px 0 0 !important;
+    padding: 0 !important;
+    gap: 5px 9px !important;
+  }
+
+  body[data-page="home"]
+  .hero.bh-open .hero-actions .primary {
+    min-height: 38px !important;
+    padding: 7px 9px !important;
+    gap: 5px;
+    font-size: 12px !important;
+    border-radius: 11px;
+  }
+
+  body[data-page="home"]
+  .hero.bh-open .hero-actions .primary svg {
+    width: 17px;
+    height: 19px;
+  }
+
+  body[data-page="home"]
+  .hero.bh-open .hero-actions > a {
+    font-size: 11px !important;
+    white-space: nowrap;
+  }
+
+  /* ---------- 歡迎文字：排在頂部操作區下面 ---------- */
+
+  body[data-page="home"]
+  .hero.bh-open > div:first-child > h1 {
+    order: 2 !important;
+    margin: 12px 0 3px !important;
+    font-size: 23px !important;
+    line-height: 1.35 !important;
+  }
+
+  body[data-page="home"]
+  .hero.bh-open > div:first-child > p {
+    order: 3 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none;
+    font-size: 12px !important;
+    line-height: 1.6 !important;
+  }
+
+  /* ---------- 兔兔：緊貼歡迎文字 ---------- */
+
+  body[data-page="home"]
+  .hero.bh-open > .bh-stage {
+    position: static !important;
+    order: 4 !important;
+
+    width: 100% !important;
+    max-width: 460px !important;
+    min-height: 0 !important;
+
+    align-self: center;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /*
+   * SVG 本身上方有透明空白，
+   * 向上收 22px，縮短文字與兔兔的視覺距離。
+   */
+  body[data-page="home"]
+  .hero.bh-open .bh-world {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: -22px 0 -6px !important;
+    pointer-events: none;
+  }
+
+  /* 兔兔本體仍然可點擊、拖動撫摸 */
+  body[data-page="home"]
+  .hero.bh-open .bh-world [data-bh-pet] {
+    pointer-events: auto;
+  }
+
+  body[data-page="home"]
+  .hero.bh-open .bh-line {
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 5px !important;
+    font-size: 12px !important;
+    line-height: 1.65 !important;
+  }
+
+  body[data-page="home"]
+  .hero.bh-open .bh-meta {
+    gap: 3px 9px;
+    margin: 3px 0 9px !important;
+  }
+
+  /* ---------- 好感度和餵食仍放兔兔下面 ---------- */
+
+  body[data-page="home"]
+  .hero.bh-open #rabbitCarePanel {
+    order: 5 !important;
+    width: 100%;
+    margin: 0 !important;
+    padding: 11px 0 0 !important;
+    border-top: 1px dashed #b8819640;
+  }
+}
