@@ -1017,3 +1017,66 @@ footer{max-width:1180px;margin:0 auto;padding:0 28px 24px;text-align:center;colo
     border-top: 1px dashed #b8819640;
   }
 }
+/* 統一遊戲入口：直接排在「叫兔兔」下面 */
+body[data-page="home"] .hero.bh-open .bh-actions {
+  display: grid !important;
+  grid-template-columns: repeat(4, 49px) !important;
+  grid-template-rows: auto auto !important;
+  align-items: center;
+  gap: 6px 9px !important;
+}
+
+body[data-page="home"]
+.hero.bh-open .bh-actions > .games-entry {
+  position: static !important;
+  inset: auto !important;
+
+  grid-column: 4;
+  grid-row: 2;
+  justify-self: end;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  width: max-content;
+  min-width: 84px;
+  min-height: 36px;
+  margin: 0;
+  padding: 5px 9px;
+
+  border: 1px solid #ffffffaa;
+  border-radius: 12px;
+  background: var(--paper, #fffefd);
+  color: var(--accent, #a64f70);
+
+  font: 700 12px/1.4 var(--font, sans-serif);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+body[data-page="home"]
+.hero.bh-open .games-entry svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  body[data-page="home"] .hero.bh-open .bh-actions {
+    grid-template-columns: repeat(2, 44px) !important;
+    grid-template-rows: 44px 44px auto !important;
+    width: 93px !important;
+    gap: 5px !important;
+  }
+
+  body[data-page="home"]
+  .hero.bh-open .bh-actions > .games-entry {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-self: stretch;
+    min-width: 0;
+    width: 100%;
+  }
+}
