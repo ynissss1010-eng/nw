@@ -10,7 +10,7 @@
 <style>
 @import url("https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Nunito:wght@600;800;900&display=swap");
 
-:root{
+:root {
   --bg:#fff7f2;
   --paper:#fffdfa;
   --ink:#563f48;
@@ -18,134 +18,361 @@
   --accent:#a45377;
   --line:#eadce2;
 }
-*{box-sizing:border-box}
-body{
-  margin:0;background:var(--bg);color:var(--ink);
+
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
   font:15px/1.65 "Nunito","LXGW WenKai TC",
     "Microsoft JhengHei",sans-serif;
 }
-button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-button{
-  font:inherit;cursor:pointer;min-height:43px;
-  padding:9px 14px;border:1px solid var(--line);
-  border-radius:12px;background:var(--paper);color:inherit;
+
+button,a {
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
 }
-button:disabled{opacity:.5;cursor:not-allowed}
-a{color:var(--accent);text-decoration:none}
-button:focus-visible,a:focus-visible,.board:focus-visible{
-  outline:3px solid var(--accent);outline-offset:4px;
+
+button {
+  min-height:43px;
+  padding:9px 14px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--paper);
+  color:inherit;
+  font:inherit;
+  cursor:pointer;
 }
-.wrap{width:min(530px,100%);margin:auto;padding:20px 15px 35px}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-header a{font-size:12px}
-h1{font-size:32px;margin:0}
-.subtitle{text-align:center;font-size:12px;color:var(--muted);margin:9px 0 20px}
-.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}
-.scores{display:flex;gap:9px}
-.score{
-  min-width:92px;text-align:center;background:var(--paper);
-  border:1px solid var(--line);border-radius:13px;padding:8px 13px;
+
+button:disabled {
+  opacity:.5;
+  cursor:not-allowed;
 }
-.score span{display:block;font-size:10px;color:var(--muted)}
-.score strong{display:block;font-size:23px;line-height:1.3}
-.board{
-  --gap:9px;
-  --pad:10px;
+
+a {
+  color:var(--accent);
+  text-decoration:none;
+}
+
+button:focus-visible,
+a:focus-visible,
+.board:focus-visible {
+  outline:3px solid var(--accent);
+  outline-offset:4px;
+}
+
+.primary {
+  background:var(--accent);
+  color:white;
+  border-color:var(--accent);
+}
+
+.wrap {
+  width:min(650px,100%);
+  margin:auto;
+  padding:20px 14px 35px;
+}
+
+header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+header a {
+  font-size:12px;
+  white-space:nowrap;
+}
+
+h1 {
+  margin:0;
+  font-size:31px;
+}
+
+.subtitle {
+  margin:8px 0 19px;
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.top {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.scores {
+  display:flex;
+  gap:8px;
+  min-width:0;
+}
+
+.score {
+  min-width:92px;
+  padding:8px 12px;
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:var(--paper);
+  text-align:center;
+}
+
+.score span {
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+}
+
+.score strong {
+  display:block;
+  font:800 23px/1.3 "Nunito",sans-serif;
+  overflow-wrap:anywhere;
+}
+
+/*
+ * 明確指定六行六列。
+ * 兔兔圖塊的位置讀取這些格子的實際座標，
+ * 不依賴另外計算的 padding 或百分比。
+ */
+.board {
+  --gap:7px;
+  --pad:9px;
   position:relative;
   width:100%;
   aspect-ratio:1;
   padding:var(--pad);
+  border:0;
+  border-radius:20px;
   background:#dfccd4;
-  border-radius:21px;
+  overflow:hidden;
   touch-action:none;
   user-select:none;
   -webkit-user-select:none;
-  overflow:hidden;
+  isolation:isolate;
 }
-.cells{
+
+.cells {
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  grid-template-rows:repeat(6,minmax(0,1fr));
   gap:var(--gap);
+  width:100%;
   height:100%;
-}
-.cell{background:#f6eaf0a1;border-radius:14px}
-.tile{
-  position:absolute;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  border-radius:14px;
-  background:var(--tile-bg);
-  box-shadow:0 2px 0 #a77c8e18;
   pointer-events:none;
 }
-.tile svg{width:82%;height:73%;display:block;overflow:visible}
-.tile strong{
-  display:block;
-  font:900 clamp(23px,6.5vw,33px)/1 "Nunito",sans-serif;
-  color:#654653;
-  margin-top:-5%;
-  padding-bottom:7%;
+
+.cell {
+  min-width:0;
+  min-height:0;
+  border-radius:11px;
+  background:#f6eaf0ac;
 }
-.tile[data-large="true"] strong{
-  font-size:clamp(19px,5.4vw,27px);
+
+.tiles {
+  position:absolute;
+  inset:0;
+  pointer-events:none;
 }
-.message{
-  min-height:42px;
-  text-align:center;font-size:13px;
-  color:var(--accent);padding:13px 3px 0;
+
+/* 外層只負責定位和移動 */
+.tile {
+  position:absolute;
+  left:0;
+  top:0;
+  pointer-events:none;
+  will-change:transform;
 }
-.help{text-align:center;color:var(--muted);font-size:12px}
-.collection{margin-top:24px;border-top:1px dashed var(--line);padding-top:18px}
-.collection h2{font-size:16px;margin:0 0 12px}
-.legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.legend-item{
-  background:var(--paper);border:1px solid var(--line);
-  border-radius:12px;text-align:center;padding:8px 3px;
+
+/* 內層負責兔兔和合併縮放，避免與位移動畫互搶 */
+.tile-face {
+  width:100%;
+  height:100%;
+  display:grid;
+  grid-template-rows:minmax(0,1fr) auto;
+  justify-items:center;
+  align-items:center;
+  overflow:hidden;
+  border-radius:11px;
+  background:var(--tile-bg);
 }
-.legend-item svg{width:53px;height:55px;display:block;margin:auto}
-.legend-item strong{font-size:13px}
-.legend-item small{display:block;font-size:9px;color:var(--muted)}
-footer{text-align:center;font-size:10px;color:var(--muted);margin-top:26px}
-dialog{
-  width:min(380px,calc(100% - 24px));max-height:85dvh;overflow:auto;
-  border:1px solid var(--line);border-radius:22px;
-  background:var(--paper);color:var(--ink);
-  padding:28px 23px;text-align:center;
-}
-dialog::backdrop{background:#4b344766}
-dialog h2{font-size:27px;margin:0 0 10px}
-dialog p{font-size:13px;color:var(--muted)}
-.dialog-actions{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;margin-top:20px}
-.primary{background:var(--accent);color:white;border-color:var(--accent)}
-@media(max-width:380px){
-  .wrap{padding:14px 10px 28px}
-  h1{font-size:27px}
-  .board{--gap:6px;--pad:8px;border-radius:17px}
-  .tile,.cell{border-radius:11px}
-  .score{min-width:80px;padding:7px 9px}
-}
-/* 2048：改用兔兔頭像，數字放在下面 */
+
 .tile svg {
-  width: 88%;
-  height: 73%;
-  flex-shrink: 0;
+  display:block;
+  width:90%;
+  height:100%;
+  min-height:0;
 }
 
 .tile strong {
-  margin-top: 0;
-  padding-bottom: 5%;
+  display:block;
+  width:100%;
+  margin:0;
+  padding:0 1px 4px;
+  color:#624450;
+  text-align:center;
+  font:900 var(--number-size,22px)/1 "Nunito",sans-serif;
+  letter-spacing:-.5px;
 }
 
-/* 下方圖鑑同步使用頭像 */
+.message {
+  min-height:45px;
+  padding:12px 3px 0;
+  color:var(--accent);
+  text-align:center;
+  font-size:13px;
+}
+
+.help {
+  margin:7px 0;
+  color:var(--muted);
+  text-align:center;
+  font-size:12px;
+  line-height:1.9;
+}
+
+.collection {
+  margin-top:23px;
+  padding-top:17px;
+  border-top:1px dashed var(--line);
+}
+
+.collection summary {
+  cursor:pointer;
+  font-size:15px;
+  font-weight:700;
+}
+
+.legend {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin-top:14px;
+}
+
+.legend-item {
+  min-width:0;
+  padding:8px 3px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--paper);
+  text-align:center;
+}
+
 .legend-item svg {
-  width: 58px;
-  height: 62px;
+  display:block;
+  width:57px;
+  height:61px;
+  max-width:100%;
+  margin:auto;
 }
 
+.legend-item strong {
+  font:900 14px "Nunito",sans-serif;
+}
+
+.legend-item small {
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+}
+
+footer {
+  margin-top:25px;
+  color:var(--muted);
+  text-align:center;
+  font-size:10px;
+}
+
+dialog {
+  width:min(380px,calc(100% - 24px));
+  max-height:85dvh;
+  overflow:auto;
+  padding:27px 22px;
+  border:1px solid var(--line);
+  border-radius:22px;
+  background:var(--paper);
+  color:var(--ink);
+  text-align:center;
+}
+
+dialog::backdrop {
+  background:#4b344766;
+}
+
+dialog h2 {
+  margin:0 0 10px;
+  font-size:27px;
+}
+
+dialog p {
+  color:var(--muted);
+  font-size:13px;
+}
+
+.dialog-actions {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:9px;
+  margin-top:20px;
+}
+
+@media(max-width:430px) {
+  .wrap {
+    padding:16px 10px 30px;
+  }
+
+  h1 {
+    font-size:26px;
+  }
+
+  .board {
+    --gap:4px;
+    --pad:6px;
+    border-radius:15px;
+  }
+
+  .cell,.tile-face {
+    border-radius:8px;
+  }
+
+  .score {
+    min-width:76px;
+    padding:7px 9px;
+  }
+
+  .score strong {
+    font-size:21px;
+  }
+
+  .tile strong {
+    padding-bottom:3px;
+  }
+
+  .legend {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  * {
+    scroll-behavior:auto !important;
+  }
+
+  .tile {
+    will-change:auto;
+  }
+}
 </style>
 </head>
+
 <body>
 <main class="wrap">
   <header>
@@ -154,32 +381,44 @@ dialog p{font-size:13px;color:var(--muted)}
     <a href="index.html">小窩</a>
   </header>
 
-  <p class="subtitle">兩隻一樣的小兔兔，合成一位新朋友。</p>
+  <p class="subtitle">6 × 6 大棋盤 · 把相同兔兔合成新朋友</p>
 
-  <div class="top">
+  <section class="top">
     <div class="scores">
-      <div class="score"><span>分數</span><strong id="score">0</strong></div>
-      <div class="score"><span>最高分</span><strong id="best">0</strong></div>
+      <div class="score">
+        <span>分數</span>
+        <strong id="score">0</strong>
+      </div>
+      <div class="score">
+        <span>最高分</span>
+        <strong id="best">0</strong>
+      </div>
     </div>
+
     <button type="button" id="newGame">新遊戲</button>
-  </div>
+  </section>
 
   <div class="board" id="board"
-    tabindex="0" role="group"
-    aria-label="兔兔2048棋盤，使用方向鍵或滑動移動">
-    <div class="cells" aria-hidden="true"></div>
+    tabindex="0"
+    role="group"
+    aria-label="六乘六兔兔2048棋盤，滑動或按方向鍵移動">
+    <div class="cells" id="cells" aria-hidden="true"></div>
+    <div class="tiles" id="tiles"></div>
   </div>
 
-  <div class="message" id="message" role="status" aria-live="polite"></div>
+  <div class="message" id="message"
+    role="status" aria-live="polite"></div>
+
   <p class="help">
-    滑動或按方向鍵移動。相同數字相遇時合併。<br>
-    每次有效移動後新增一隻兔兔，合成 2048 就成功！
+    手機上下左右滑動，電腦使用方向鍵。<br>
+    相同數字碰在一起就會合併；每次有效移動後出現 2 或 4。<br>
+    合成 2048 即可達成目標，也能繼續挑戰更大的兔兔。
   </p>
 
-  <section class="collection">
-    <h2>兔兔合成圖鑑</h2>
+  <details class="collection">
+    <summary>兔兔合成圖鑑</summary>
     <div class="legend" id="legend"></div>
-  </section>
+  </details>
 
   <footer>Made by Yanice Mai</footer>
 </main>
@@ -191,8 +430,11 @@ dialog p{font-size:13px;color:var(--muted)}
 
 (() => {
   const $ = id => document.getElementById(id);
-  const SIZE = 4;
-  const KEY = "bunny-2048-save-v1";
+  const SIZE = 6;
+  const COUNT = SIZE * SIZE;
+
+  // 與舊版4×4分開保存。
+  const KEY = "bunny-2048-6x6-save-v1";
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
   const RABBITS = [
@@ -206,476 +448,689 @@ dialog p{font-size:13px;color:var(--muted)}
     {name:"灰色侏儒兔",fur:"#a7a4b8",bg:"#e8dff3",breed:0,bow:true},
     {name:"可可垂耳兔",fur:"#ab8d7f",bg:"#ead4cd",breed:1,bow:true},
     {name:"奶油道奇兔",fur:"#d2b795",bg:"#f1dfb8",breed:3,bow:true},
-    {name:"星星兔兔",fur:"#fff7e8",bg:"#f5dca6",breed:0,crown:true}
+    {name:"星星兔兔",fur:"#fff7e8",bg:"#f5dca6",breed:0,crown:true},
+    {name:"月光垂耳兔",fur:"#e4e6ee",bg:"#e4e6f5",breed:1,crown:true},
+    {name:"草莓長毛兔",fur:"#f4dedc",bg:"#f7d9e4",breed:2,crown:true},
+    {name:"皇家道奇兔",fur:"#9a8dba",bg:"#e5d6f2",breed:3,crown:true}
   ];
 
-  let board = Array(16).fill(0);
+  let board = Array(COUNT).fill(0);
   let score = 0;
   let best = 0;
   let won = false;
   let busy = false;
   let pointer = null;
+  let pendingResize = false;
+  let observedWidth = 0;
 
-  function rabbitFor(value) {
+  const say = value => $("message").textContent = value;
+
+  function typeFor(value) {
     const index = Math.max(0,Math.log2(value)-1);
     return RABBITS[Math.min(index,RABBITS.length-1)];
   }
 
+  /* ---------- 只有耳朵、腦袋、表情 ---------- */
+
   function rabbitSVG(value) {
-    const t = rabbitFor(value);
-    const lop = t.breed === 1 || t.breed === 2;
-    const fluffy = t.breed === 2;
-    const dutch = t.breed === 3;
+    const type = typeFor(value);
+    const fur = type.fur;
+    const ink = "#80655e";
+    const white = "#fffaf2";
+    const lop = type.breed === 1 || type.breed === 2;
+    const fluffy = type.breed === 2;
+    const dutch = type.breed === 3;
+    const face = Math.round(Math.log2(value)) % 4;
 
-    return `<svg viewBox="32 0 140 155" aria-hidden="true">
+    const eyes = [
+      `<ellipse cx="83" cy="110" rx="4.5" ry="6" fill="#49362f"/>
+       <ellipse cx="121" cy="110" rx="4.5" ry="6" fill="#49362f"/>
+       <circle cx="84.5" cy="108" r="1.6" fill="white"/>
+       <circle cx="122.5" cy="108" r="1.6" fill="white"/>`,
 
+      `<path d="M77 112q6-10 12 0m26 0q6-10 12 0"
+        fill="none" stroke="${ink}" stroke-width="2.3"
+        stroke-linecap="round"/>`,
 
-      ${!lop?`
-        <path d="M79 91Q57 13 75 9Q93 10 98 87
-          M112 87Q114 10 133 14Q148 19 129 94"
-          fill="${t.fur}" stroke="#80655e" stroke-width="2"/>
-        <path d="M80 69Q70 25 77 27l9 43
-          M121 71q5-44 12-42l-7 43" fill="#e9b7c8"/>
-      `:""}
+      `<path d="M77 111q6-9 12 0" fill="none"
+        stroke="${ink}" stroke-width="2.3" stroke-linecap="round"/>
+       <ellipse cx="121" cy="110" rx="4.5" ry="6" fill="#49362f"/>
+       <circle cx="122.5" cy="108" r="1.6" fill="white"/>`,
 
-      ${fluffy?`
-        <path d="m63 98-9 13 8 8-8 12 12 5-4 13 15 1
-          2 12 14-5 10 10 12-8 14 6 8-12 15 2 1-14
-          10-6-7-11 7-12-11-8 2-12-15 1-4-11-13 5
-          -10-8-11 9-12-5-6 10Z"
-          fill="${t.fur}" stroke="#80655e" stroke-width="1.6"/>
-      `:""}
+      `<path d="M83 117l-6-6a3.8 3.8 0 0 1 6-4.5
+         a3.8 3.8 0 0 1 6 4.5Z
+         M121 117l-6-6a3.8 3.8 0 0 1 6-4.5
+         a3.8 3.8 0 0 1 6 4.5Z"
+         fill="#cc668d"/>`
+    ][face];
 
-      <ellipse cx="103" cy="113" rx="44" ry="37"
-        fill="${t.fur}" stroke="#80655e" stroke-width="2"/>
+    return `
+      <svg viewBox="32 0 140 154" aria-hidden="true">
+        ${!lop ? `
+          <path d="M79 91Q57 13 75 9Q93 10 98 87
+            M112 87Q114 10 133 14Q148 19 129 94"
+            fill="${fur}" stroke="${ink}" stroke-width="2"/>
+          <path d="M80 69Q70 25 77 27l9 43
+            M121 71q5-44 12-42l-7 43"
+            fill="#e9b7c8"/>
+        ` : ""}
 
-      ${dutch?`
-        <path d="m103 77-13 34q-8 20-1 34 15 9 29-1
-          6-14-3-33Z" fill="#fffaf2"/>
-      `:""}
+        ${fluffy ? `
+          <path d="m63 98-9 13 8 8-8 12 12 5-4 13 15 1
+            2 5 14-5 10 5 12-5 14 4 8-9 15 2 1-9
+            10-6-7-11 7-12-11-8 2-12-15 1-4-11-13 5
+            -10-8-11 9-12-5-6 10Z"
+            fill="${fur}" stroke="${ink}" stroke-width="1.6"/>
+        ` : ""}
 
-      ${lop?`
-        <path d="M66 85Q40 85 43 119l5 28q4 16 15 4l14-45
-          M137 85q23 4 19 36l-7 28q-5 13-14 0l-10-43"
-          fill="${t.fur}" stroke="#80655e" stroke-width="2"/>
-        <path d="M55 103q-5 19 1 34m86-33q5 18-1 34"
-          stroke="#e2b1c0" stroke-width="6" fill="none"
+        <ellipse cx="103" cy="113" rx="44" ry="37"
+          fill="${fur}" stroke="${ink}" stroke-width="2"/>
+
+        ${dutch ? `
+          <path d="m103 77-13 34q-8 20-1 34
+            15 9 29-1 6-14-3-33Z" fill="${white}"/>
+        ` : ""}
+
+        ${lop ? `
+          <path d="M66 85Q40 85 43 119l5 28q4 10 15-2l14-39
+            M137 85q23 4 19 36l-7 23q-5 10-14-3l-10-35"
+            fill="${fur}" stroke="${ink}" stroke-width="2"/>
+          <path d="M55 103q-5 19 1 31m86-30q5 18-1 31"
+            stroke="#e2b1c0" stroke-width="6" fill="none"
+            stroke-linecap="round"/>
+        ` : ""}
+
+        ${fluffy ? `
+          <path d="m73 90 7-11 7 5 9-9 7 7 11-6 6 10"
+            fill="${fur}" stroke="${ink}" stroke-width="1.5"/>
+        ` : ""}
+
+        ${eyes}
+
+        <ellipse cx="74" cy="124" rx="9" ry="4.5"
+          fill="#e9a2b8" opacity=".65"/>
+        <ellipse cx="131" cy="124" rx="9" ry="4.5"
+          fill="#e9a2b8" opacity=".65"/>
+
+        <path d="M99 122q4-3 8 0l-4 4Z" fill="#b77d8c"/>
+        <path d="M103 126v4m0 0q-5 5-9 0m9 0q5 5 9 0"
+          fill="none" stroke="${ink}" stroke-width="1.5"
           stroke-linecap="round"/>
-      `:""}
 
-      ${fluffy?`
-        <path d="m73 90 7-11 7 5 9-9 7 7 11-6 6 10"
-          fill="${t.fur}" stroke="#80655e" stroke-width="1.5"/>
-      `:""}
+        ${type.bow ? `
+          <g transform="translate(133 88) rotate(12)">
+            <path d="M0 0Q-14-12-14-2v10q0 7 14-4
+              q14 11 14 4V-2Q14-12 0 0Z"
+              fill="#d58caa" stroke="#a86c89" stroke-width="1.2"/>
+            <circle cx="0" cy="2" r="3.5" fill="#f5c6d6"/>
+          </g>
+        ` : ""}
 
-      <ellipse cx="84" cy="110" rx="4.5" ry="6" fill="#49362f"/>
-      <ellipse cx="122" cy="110" rx="4.5" ry="6" fill="#49362f"/>
-      <circle cx="85.5" cy="108" r="1.6" fill="white"/>
-      <circle cx="123.5" cy="108" r="1.6" fill="white"/>
-      <ellipse cx="75" cy="124" rx="9" ry="4.5" fill="#e9a2b8" opacity=".65"/>
-      <ellipse cx="131" cy="124" rx="9" ry="4.5" fill="#e9a2b8" opacity=".65"/>
-      <path d="M99 122q4-3 8 0l-4 4Z" fill="#b77d8c"/>
-      <path d="M103 126v4m0 0q-5 5-9 0m9 0q5 5 9 0"
-        fill="none" stroke="#80655e" stroke-width="1.5"
-        stroke-linecap="round"/>
-
-      ${t.bow ? `
-  <g transform="translate(133 87) rotate(15)">
-    <path d="M0 0Q-16-13-16-3V9Q-15 16 0 4
-      Q16 16 16 8V-3Q16-13 0 0Z"
-      fill="#d58caa"
-      stroke="#a86c89"
-      stroke-width="1.3"/>
-    <circle cx="0" cy="2" r="4" fill="#f5c6d6"
-      stroke="#a86c89" stroke-width="1"/>
-  </g>
-` : ""}
-
-
-      ${t.crown?`
-        <path d="m84 78-4-20 13 8 10-16 10 16 13-8-4 20Z"
-          fill="#e5b85c" stroke="#b6883d" stroke-width="1.5"/>
-      `:""}
-    </svg>`;
+        ${type.crown ? `
+          <path d="m84 78-4-20 13 8 10-16 10 16
+            13-8-4 20Z"
+            fill="#e5b85c" stroke="#b6883d" stroke-width="1.5"/>
+        ` : ""}
+      </svg>
+    `;
   }
 
-  function say(text) {
-    $("message").textContent = text;
+  /* ---------- 存檔 ---------- */
+
+  function validSave(data) {
+    return data?.version === 1 &&
+      data.size === SIZE &&
+      Array.isArray(data.board) &&
+      data.board.length === COUNT &&
+      data.board.some(value => value > 0) &&
+      data.board.every(value =>
+        value === 0 || (
+          Number.isSafeInteger(value) &&
+          value >= 2 &&
+          Number.isInteger(Math.log2(value))
+        )
+      ) &&
+      Number.isSafeInteger(data.score) &&
+      data.score >= 0 &&
+      Number.isSafeInteger(data.best) &&
+      data.best >= 0 &&
+      typeof data.won === "boolean";
   }
 
   function save() {
     try {
       localStorage.setItem(KEY,JSON.stringify({
-        version:1,board,score,best,won
+        version:1,
+        size:SIZE,
+        board,
+        score,
+        best,
+        won
       }));
     } catch {
       say("今次進度未能保存，但仍可繼續遊玩。");
     }
   }
 
-  function validSave(data) {
-    return data?.version === 1 &&
-      Array.isArray(data.board) && data.board.length === 16 &&
-      data.board.every(v=>v===0||(
-        Number.isSafeInteger(v)&&v>=2&&Number.isInteger(Math.log2(v))
-      )) &&
-      Number.isSafeInteger(data.score)&&data.score>=0 &&
-      Number.isSafeInteger(data.best)&&data.best>=0 &&
-      typeof data.won === "boolean";
+  /* ---------- 格子定位：讀實際位置 ---------- */
+
+  function getSlots() {
+    const layer = $("tiles").getBoundingClientRect();
+
+    return [...$("cells").children].map(cell => {
+      const rect = cell.getBoundingClientRect();
+
+      return {
+        x:rect.left-layer.left,
+        y:rect.top-layer.top,
+        width:rect.width,
+        height:rect.height
+      };
+    });
   }
 
-  function geometry() {
-    const root = $("board");
-    const css = getComputedStyle(root);
-    const pad = parseFloat(css.getPropertyValue("--pad"));
-    const gap = parseFloat(css.getPropertyValue("--gap"));
-    const size = (root.clientWidth-pad*2-gap*3)/4;
-    return {pad,gap,size};
+  function makeTile(value,index,slots) {
+    const location = slots[index];
+    const type = typeFor(value);
+    const tile = document.createElement("div");
+
+    tile.className = "tile";
+    tile.style.width = location.width+"px";
+    tile.style.height = location.height+"px";
+    tile.style.left = location.x+"px";
+    tile.style.top = location.y+"px";
+
+    const digits = String(value).length;
+    const normalSize = Math.min(28,location.width*.31);
+    const numberSize = Math.max(
+      10,
+      Math.min(normalSize,location.width/(digits*.64+1))
+    );
+
+    tile.style.setProperty("--tile-bg",type.bg);
+    tile.style.setProperty("--number-size",numberSize+"px");
+    tile.setAttribute("aria-label",`${value}，${type.name}`);
+
+    tile.innerHTML = `
+      <div class="tile-face">
+        ${rabbitSVG(value)}
+        <strong>${value}</strong>
+      </div>
+    `;
+
+    $("tiles").append(tile);
+    return tile;
   }
 
-  function location(index) {
-    const {pad,gap,size}=geometry();
-    return {
-      x:pad+(index%4)*(size+gap),
-      y:pad+Math.floor(index/4)*(size+gap),
-      size
-    };
-  }
-
-  function tile(value,index) {
-    const el=document.createElement("div");
-    const pos=location(index);
-    const type=rabbitFor(value);
-
-    el.className="tile";
-    el.dataset.large=String(value>=1024);
-    el.style.setProperty("--tile-bg",type.bg);
-    el.style.width=pos.size+"px";
-    el.style.height=pos.size+"px";
-    el.style.left=pos.x+"px";
-    el.style.top=pos.y+"px";
-    el.setAttribute("aria-label",`${value}，${type.name}`);
-    el.innerHTML=rabbitSVG(value)+`<strong>${value}</strong>`;
-
-    $("board").append(el);
-    return el;
-  }
-
-  function clearTiles() {
-    $("board").querySelectorAll(".tile").forEach(el=>el.remove());
+  function updateScore() {
+    $("score").textContent = score.toLocaleString();
+    $("best").textContent = best.toLocaleString();
+    $("newGame").disabled = busy;
+    $("board").setAttribute("aria-busy",String(busy));
   }
 
   function render(spawnIndex=-1,merged=[]) {
-    clearTiles();
+    const slots = getSlots();
+    $("tiles").replaceChildren();
 
-    board.forEach((value,index)=>{
-      if(!value)return;
-      const el=tile(value,index);
+    board.forEach((value,index) => {
+      if (!value) return;
 
-      if(!reduced.matches&&(index===spawnIndex||merged.includes(index))) {
-        el.animate(
+      const tile = makeTile(value,index,slots);
+      const content = tile.firstElementChild;
+
+      if (
+        !reduced.matches &&
+        typeof content.animate === "function" &&
+        (index === spawnIndex || merged.includes(index))
+      ) {
+        content.animate(
           merged.includes(index)
             ? [
                 {transform:"scale(.88)"},
-                {transform:"scale(1.1)",offset:.55},
+                {transform:"scale(1.10)",offset:.55},
                 {transform:"scale(1)"}
               ]
             : [
-                {transform:"scale(.35)",opacity:0},
+                {transform:"scale(.4)",opacity:0},
                 {transform:"scale(1)",opacity:1}
               ],
-          {duration:190,easing:"ease-out"}
+          {duration:180,easing:"ease-out"}
         );
       }
     });
 
-    $("score").textContent=score;
-    $("best").textContent=best;
-    $("newGame").disabled=busy;
-    $("board").setAttribute("aria-busy",String(busy));
+    updateScore();
   }
 
+  /* ---------- 標準2048合併規則 ---------- */
+
   function addTile() {
-    const empty=board.map((v,i)=>v===0?i:-1).filter(i=>i>=0);
-    if(!empty.length)return -1;
-    const index=empty[Math.floor(Math.random()*empty.length)];
-    board[index]=Math.random()<.9?2:4;
+    const empty = board
+      .map((value,index) => value === 0 ? index : -1)
+      .filter(index => index >= 0);
+
+    if (!empty.length) return -1;
+
+    const index = empty[Math.floor(Math.random()*empty.length)];
+    board[index] = Math.random() < .9 ? 2 : 4;
     return index;
   }
 
   function lineIndices(direction,line) {
-    if(direction==="left")return [0,1,2,3].map(c=>line*4+c);
-    if(direction==="right")return [3,2,1,0].map(c=>line*4+c);
-    if(direction==="up")return [0,1,2,3].map(r=>r*4+line);
-    return [3,2,1,0].map(r=>r*4+line);
+    return Array.from({length:SIZE},(_,offset) => {
+      if (direction === "left") return line*SIZE+offset;
+      if (direction === "right") return line*SIZE+SIZE-1-offset;
+      if (direction === "up") return offset*SIZE+line;
+      return (SIZE-1-offset)*SIZE+line;
+    });
   }
 
-  /*
-   * 一次移動中，每個新合成的格子只合併一次。
-   * 例如 2,2,4,0 向左會得到 4,4,0,0，不會直接變 8。
-   */
   function calculate(direction) {
-    const next=Array(16).fill(0);
-    const movements=[];
-    const merged=[];
-    let gain=0;
+    const next = Array(COUNT).fill(0);
+    const movements = [];
+    const merged = [];
+    let gain = 0;
 
-    for(let line=0;line<4;line++) {
-      const indices=lineIndices(direction,line);
-      const items=indices.filter(i=>board[i]!==0)
-        .map(i=>({value:board[i],from:i}));
+    for (let line=0;line<SIZE;line++) {
+      const indices = lineIndices(direction,line);
+      const items = indices
+        .filter(index => board[index] !== 0)
+        .map(index => ({value:board[index],from:index}));
 
-      let output=0;
+      let output = 0;
 
-      for(let i=0;i<items.length;i++) {
-        const first=items[i];
-        const destination=indices[output++];
+      for (let i=0;i<items.length;i++) {
+        const first = items[i];
+        const destination = indices[output++];
 
-        if(i+1<items.length&&items[i+1].value===first.value) {
-          const second=items[++i];
-          next[destination]=first.value*2;
-          gain+=next[destination];
+        const canMerge =
+          i+1 < items.length &&
+          items[i+1].value === first.value &&
+          Number.isSafeInteger(first.value*2);
+
+        if (canMerge) {
+          const second = items[++i];
+          const combined = first.value*2;
+
+          next[destination] = combined;
+          gain += combined;
           merged.push(destination);
+
           movements.push(
             {...first,to:destination},
             {...second,to:destination}
           );
         } else {
-          next[destination]=first.value;
+          next[destination] = first.value;
           movements.push({...first,to:destination});
         }
       }
     }
 
     return {
-      next,movements,merged,gain,
-      changed:next.some((value,index)=>value!==board[index])
+      next,
+      movements,
+      merged,
+      gain,
+      changed:next.some((value,index) => value !== board[index])
     };
   }
 
   function hasMoves() {
-    if(board.includes(0))return true;
+    if (board.includes(0)) return true;
 
-    for(let r=0;r<4;r++) {
-      for(let c=0;c<4;c++) {
-        const i=r*4+c;
-        if(c<3&&board[i]===board[i+1])return true;
-        if(r<3&&board[i]===board[i+4])return true;
+    for (let row=0;row<SIZE;row++) {
+      for (let column=0;column<SIZE;column++) {
+        const index = row*SIZE+column;
+        const value = board[index];
+
+        if (!Number.isSafeInteger(value*2)) continue;
+
+        if (column<SIZE-1 && value===board[index+1]) return true;
+        if (row<SIZE-1 && value===board[index+SIZE]) return true;
       }
     }
+
     return false;
   }
 
+  /* ---------- 動畫 ---------- */
+
   async function animateMove(movements) {
-    clearTiles();
+    const slots = getSlots();
+    $("tiles").replaceChildren();
 
-    const tasks=movements.map(item=>{
-      const el=tile(item.value,item.from);
-      const from=location(item.from);
-      const to=location(item.to);
+    const tasks = movements.map(item => {
+      const tile = makeTile(item.value,item.from,slots);
+      const from = slots[item.from];
+      const to = slots[item.to];
 
-      if(reduced.matches)return Promise.resolve();
+      if (
+        reduced.matches ||
+        typeof tile.animate !== "function" ||
+        item.from === item.to
+      ) return Promise.resolve();
 
-      const animation=el.animate(
+      const animation = tile.animate(
         [
           {transform:"translate(0,0)"},
-          {transform:`translate(${to.x-from.x}px,${to.y-from.y}px)`}
+          {
+            transform:`translate(${to.x-from.x}px,${to.y-from.y}px)`
+          }
         ],
         {
-          duration:150,
+          duration:145,
           easing:"cubic-bezier(.2,.75,.25,1)",
           fill:"forwards"
         }
       );
 
-      return animation.finished.catch(()=>{});
+      return animation.finished.catch(() => {});
     });
 
     await Promise.all(tasks);
   }
 
-  function showDialog(win) {
-    const dialog=$("dialog");
+  /* ---------- 結算 ---------- */
 
-    dialog.innerHTML=win?`
+  function showDialog(win) {
+    const dialog = $("dialog");
+
+    dialog.innerHTML = win ? `
       <h2>2048 兔兔出現喇！</h2>
-      <p>合成成功！目前 ${score.toLocaleString()} 分。<br>
-        可以繼續挑戰更大的數字。</p>
+      <p>
+        合成成功！目前 ${score.toLocaleString()} 分。<br>
+        六乘六小窩仲有空間，繼續迎接新兔兔？
+      </p>
       <div class="dialog-actions">
-        <button class="primary" data-continue>繼續挑戰</button>
-        <button data-restart>重新開始</button>
+        <button type="button" class="primary" data-continue>
+          繼續挑戰
+        </button>
+        <button type="button" data-restart>重新開始</button>
         <a href="games.html">遊戲區</a>
       </div>
-    `:`
+    ` : `
       <h2>兔兔排滿晒喇！</h2>
-      <p>今次 ${score.toLocaleString()} 分。<br>
-        已經沒有可以移動或合併的位置，再試一次？</p>
+      <p>
+        今次 ${score.toLocaleString()} 分。<br>
+        已經沒有可以移動或合併的位置，再試一次？
+      </p>
       <div class="dialog-actions">
-        <button class="primary" data-restart>再玩一次</button>
+        <button type="button" class="primary" data-restart>
+          再玩一次
+        </button>
         <a href="games.html">返回遊戲區</a>
       </div>
     `;
 
-    if(!dialog.open)dialog.showModal();
+    if (!dialog.open) dialog.showModal();
   }
 
   async function move(direction) {
-    if(busy||$("dialog").open)return;
+    if (busy || pointer || $("dialog").open) return;
 
-    const result=calculate(direction);
+    const result = calculate(direction);
 
-    if(!result.changed) {
-      if(!hasMoves())showDialog(false);
+    if (!result.changed) {
+      if (!hasMoves()) showDialog(false);
+      else say("呢個方向郁唔到，試下另一邊呀～");
       return;
     }
 
-    busy=true;
-    $("newGame").disabled=true;
-    $("board").setAttribute("aria-busy","true");
+    busy = true;
+    updateScore();
 
     try {
       await animateMove(result.movements);
 
-      board=result.next;
-      score+=result.gain;
-      best=Math.max(best,score);
+      board = result.next;
+      score += result.gain;
+      best = Math.max(best,score);
 
-      const spawned=addTile();
-
+      const spawned = addTile();
       render(spawned,result.merged);
 
       say(result.gain
-        ? `啵！合埋一齊喇～ +${result.gain} 分`
+        ? `啵！兔兔合體～ +${result.gain.toLocaleString()} 分`
         : "慢慢排，幫相同兔兔搵返朋友～");
 
-      const newWin=!won&&board.some(value=>value>=2048);
-      if(newWin)won=true;
+      const newWin = !won && board.some(value => value>=2048);
+      if (newWin) won = true;
 
       save();
 
-      if(newWin)showDialog(true);
-      else if(!hasMoves())showDialog(false);
+      if (newWin) showDialog(true);
+      else if (!hasMoves()) showDialog(false);
+
+    } catch (error) {
+      console.error("2048 move:",error);
+      render();
+      say("畫面更新中斷，請再試一次。");
     } finally {
-      busy=false;
-      $("newGame").disabled=false;
-      $("board").setAttribute("aria-busy","false");
+      busy = false;
+
+      if (pendingResize) {
+        pendingResize = false;
+        render();
+      }
+
+      updateScore();
     }
   }
 
   function newGame() {
-    board=Array(16).fill(0);
-    score=0;
-    won=false;
-    pointer=null;
+    board = Array(COUNT).fill(0);
+    score = 0;
+    won = false;
+    pointer = null;
+    pendingResize = false;
 
     addTile();
-    const spawned=addTile();
+    const spawned = addTile();
+
     render(spawned);
     save();
-    say("兩隻一樣嘅兔兔碰埋，就會有新朋友呀～");
+    say("六乘六小窩開張！滑動幫兔兔搵朋友啦～");
   }
 
-  const directions={
-    ArrowLeft:"left",ArrowRight:"right",
-    ArrowUp:"up",ArrowDown:"down"
-  };
+  /* ---------- 手機滑動 ---------- */
 
-  document.addEventListener("keydown",event=>{
-    if(!(event.key in directions)||$("dialog").open)return;
-    event.preventDefault();
-    if(!event.repeat)move(directions[event.key]);
-  });
+  function clearPointer() {
+    const previous = pointer;
+    pointer = null;
 
-  $("board").addEventListener("pointerdown",event=>{
-    if(!event.isPrimary||event.button!==0||busy||$("dialog").open)return;
+    if (!previous) return;
 
-    pointer={
+    try {
+      if ($("board").hasPointerCapture(previous.id)) {
+        $("board").releasePointerCapture(previous.id);
+      }
+    } catch {}
+  }
+
+  $("board").addEventListener("pointerdown",event => {
+    if (
+      !event.isPrimary ||
+      event.button !== 0 ||
+      busy ||
+      pointer ||
+      $("dialog").open
+    ) return;
+
+    pointer = {
       id:event.pointerId,
       x:event.clientX,
       y:event.clientY
     };
 
-    try{$("board").setPointerCapture(event.pointerId)}catch{}
+    try {
+      $("board").setPointerCapture(event.pointerId);
+    } catch {}
   });
 
-  $("board").addEventListener("pointerup",event=>{
-    if(!pointer||pointer.id!==event.pointerId)return;
+  $("board").addEventListener("pointermove",event => {
+    if (pointer?.id === event.pointerId && event.cancelable) {
+      event.preventDefault();
+    }
+  },{passive:false});
 
-    const original=pointer;
-    pointer=null;
+  $("board").addEventListener("pointerup",event => {
+    if (!pointer || pointer.id !== event.pointerId) return;
 
-    try{$("board").releasePointerCapture(event.pointerId)}catch{}
+    const original = pointer;
+    const dx = event.clientX-original.x;
+    const dy = event.clientY-original.y;
 
-    const dx=event.clientX-original.x;
-    const dy=event.clientY-original.y;
+    clearPointer();
 
-    if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;
-
-    move(Math.abs(dx)>Math.abs(dy)
-      ? dx>0?"right":"left"
-      : dy>0?"down":"up");
-  });
-
-  $("board").addEventListener("pointercancel",()=>pointer=null);
-  window.addEventListener("blur",()=>pointer=null);
-
-  $("newGame").onclick=()=>{
-    if(!busy&&confirm("重新開始？目前這一局會被取代。"))newGame();
-  };
-
-  $("dialog").addEventListener("click",event=>{
-    if(event.target.closest("[data-continue]")) {
-      $("dialog").close();
-      say("繼續合成！看看能迎接幾大隻兔兔～");
+    if (pendingResize) {
+      pendingResize = false;
+      render();
+      return;
     }
 
-    if(event.target.closest("[data-restart]")) {
+    if (Math.max(Math.abs(dx),Math.abs(dy))<16) return;
+
+    move(
+      Math.abs(dx)>Math.abs(dy)
+        ? dx>0 ? "right" : "left"
+        : dy>0 ? "down" : "up"
+    );
+  });
+
+  $("board").addEventListener("pointercancel",() => {
+    clearPointer();
+
+    if (pendingResize && !busy) {
+      pendingResize = false;
+      render();
+    }
+  });
+
+  $("board").addEventListener("lostpointercapture",event => {
+    if (pointer?.id === event.pointerId) clearPointer();
+  });
+
+  window.addEventListener("blur",clearPointer);
+
+  /* ---------- 電腦方向鍵 ---------- */
+
+  const directions = {
+    ArrowLeft:"left",
+    ArrowRight:"right",
+    ArrowUp:"up",
+    ArrowDown:"down"
+  };
+
+  document.addEventListener("keydown",event => {
+    if (!(event.key in directions) || $("dialog").open) return;
+
+    if (event.target.closest("input,textarea,select")) return;
+
+    event.preventDefault();
+    if (!event.repeat) move(directions[event.key]);
+  });
+
+  /* ---------- 按鈕 ---------- */
+
+  $("newGame").addEventListener("click",() => {
+    if (busy) return;
+
+    if (confirm("重新開始？目前這一局會被取代，最高分保留。")) {
+      clearPointer();
+      newGame();
+    }
+  });
+
+  $("dialog").addEventListener("click",event => {
+    if (event.target.closest("[data-continue]")) {
+      $("dialog").close();
+
+      if (!hasMoves()) {
+        showDialog(false);
+      } else {
+        say("繼續合成！下一隻兔兔會係邊個呢？");
+        $("board").focus({preventScroll:true});
+      }
+    }
+
+    if (event.target.closest("[data-restart]")) {
       $("dialog").close();
       newGame();
     }
   });
 
-  let resizeTimer;
+  /* ---------- 初始化 ---------- */
 
-  window.addEventListener("resize",()=>{
-    clearTimeout(resizeTimer);
-    resizeTimer=setTimeout(()=>{
-      if(!busy)render();
-    },180);
-  });
+  $("cells").innerHTML =
+    Array(COUNT).fill('<div class="cell"></div>').join("");
 
-  $("board").querySelector(".cells").innerHTML=
-    Array(16).fill('<div class="cell"></div>').join("");
+  $("legend").innerHTML = RABBITS.map((type,index) => {
+    const value = 2**(index+1);
 
-  $("legend").innerHTML=RABBITS.map((rabbit,index)=>{
-    const value=2**(index+1);
-    return `<div class="legend-item">
-      ${rabbitSVG(value)}
-      <strong>${value}</strong>
-      <small>${rabbit.name}</small>
-    </div>`;
+    return `
+      <div class="legend-item">
+        ${rabbitSVG(value)}
+        <strong>${value}</strong>
+        <small>${type.name}</small>
+      </div>
+    `;
   }).join("");
 
-  let restored=false;
+  let restored = false;
 
   try {
-    const data=JSON.parse(localStorage.getItem(KEY));
+    const data = JSON.parse(localStorage.getItem(KEY));
 
-    if(validSave(data)) {
-      board=data.board;
-      score=data.score;
-      best=Math.max(data.best,score);
-      won=data.won;
-      restored=true;
+    if (validSave(data)) {
+      board = data.board;
+      score = data.score;
+      best = Math.max(data.best,score);
+      won = data.won;
+      restored = true;
     }
   } catch {}
 
-  if(restored) {
+  if (restored) {
     render();
-    say("上一局幫你留住咗，繼續慢慢合兔兔～");
-    if(!hasMoves())showDialog(false);
+    say("上一局幫你留住咗，繼續合兔兔啦～");
+
+    if (!hasMoves()) {
+      showDialog(false);
+    } else if (!won && board.some(value => value>=2048)) {
+      won = true;
+      save();
+      showDialog(true);
+    }
   } else {
     newGame();
+  }
+
+  /*
+   * 棋盤實際寬度改變後，重新讀取背景格子位置。
+   * 動畫或手勢進行中則延後處理。
+   */
+  function handleResize() {
+    const width = $("board").getBoundingClientRect().width;
+
+    if (Math.abs(width-observedWidth)<.5) return;
+    observedWidth = width;
+
+    if (busy || pointer) {
+      pendingResize = true;
+    } else {
+      render();
+    }
+  }
+
+  observedWidth = $("board").getBoundingClientRect().width;
+
+  if ("ResizeObserver" in window) {
+    const observer = new ResizeObserver(handleResize);
+    observer.observe($("board"));
+  } else {
+    window.addEventListener("resize",handleResize);
   }
 })();
 </script>
