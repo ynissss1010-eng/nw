@@ -19,9 +19,7 @@
   --line:#eadce2;
 }
 
-* {
-  box-sizing:border-box;
-}
+* { box-sizing:border-box; }
 
 body {
   margin:0;
@@ -37,7 +35,7 @@ button,a {
 }
 
 button {
-  min-height:43px;
+  min-height:44px;
   padding:9px 14px;
   border:1px solid var(--line);
   border-radius:12px;
@@ -71,7 +69,7 @@ a:focus-visible,
 }
 
 .wrap {
-  width:min(650px,100%);
+  width:min(530px,100%);
   margin:auto;
   padding:20px 14px 35px;
 }
@@ -104,7 +102,7 @@ h1 {
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
+  gap:10px;
   margin-bottom:14px;
 }
 
@@ -115,7 +113,7 @@ h1 {
 }
 
 .score {
-  min-width:92px;
+  min-width:87px;
   padding:8px 12px;
   border:1px solid var(--line);
   border-radius:13px;
@@ -135,14 +133,11 @@ h1 {
   overflow-wrap:anywhere;
 }
 
-/*
- * 明確指定六行六列。
- * 兔兔圖塊的位置讀取這些格子的實際座標，
- * 不依賴另外計算的 padding 或百分比。
- */
+/* 背景明確設定四行四列 */
 .board {
-  --gap:7px;
-  --pad:9px;
+  --gap:9px;
+  --pad:10px;
+
   position:relative;
   width:100%;
   aspect-ratio:1;
@@ -159,8 +154,8 @@ h1 {
 
 .cells {
   display:grid;
-  grid-template-columns:repeat(6,minmax(0,1fr));
-  grid-template-rows:repeat(6,minmax(0,1fr));
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-rows:repeat(4,minmax(0,1fr));
   gap:var(--gap);
   width:100%;
   height:100%;
@@ -170,7 +165,7 @@ h1 {
 .cell {
   min-width:0;
   min-height:0;
-  border-radius:11px;
+  border-radius:13px;
   background:#f6eaf0ac;
 }
 
@@ -180,7 +175,7 @@ h1 {
   pointer-events:none;
 }
 
-/* 外層只負責定位和移動 */
+/* 外層控制位移，內層控制合併效果 */
 .tile {
   position:absolute;
   left:0;
@@ -189,22 +184,21 @@ h1 {
   will-change:transform;
 }
 
-/* 內層負責兔兔和合併縮放，避免與位移動畫互搶 */
 .tile-face {
-  width:100%;
-  height:100%;
   display:grid;
   grid-template-rows:minmax(0,1fr) auto;
   justify-items:center;
   align-items:center;
-  overflow:hidden;
-  border-radius:11px;
+  width:100%;
+  height:100%;
+  border-radius:13px;
   background:var(--tile-bg);
+  overflow:hidden;
 }
 
 .tile svg {
   display:block;
-  width:90%;
+  width:88%;
   height:100%;
   min-height:0;
 }
@@ -213,15 +207,15 @@ h1 {
   display:block;
   width:100%;
   margin:0;
-  padding:0 1px 4px;
+  padding:0 2px 7px;
   color:#624450;
   text-align:center;
-  font:900 var(--number-size,22px)/1 "Nunito",sans-serif;
+  font:900 var(--number-size,29px)/1 "Nunito",sans-serif;
   letter-spacing:-.5px;
 }
 
 .message {
-  min-height:45px;
+  min-height:46px;
   padding:12px 3px 0;
   color:var(--accent);
   text-align:center;
@@ -279,7 +273,7 @@ h1 {
 .legend-item small {
   display:block;
   color:var(--muted);
-  font-size:10px;
+  font-size:9px;
 }
 
 footer {
@@ -324,9 +318,9 @@ dialog p {
   margin-top:20px;
 }
 
-@media(max-width:430px) {
+@media(max-width:380px) {
   .wrap {
-    padding:16px 10px 30px;
+    padding:14px 10px 28px;
   }
 
   h1 {
@@ -334,38 +328,31 @@ dialog p {
   }
 
   .board {
-    --gap:4px;
-    --pad:6px;
-    border-radius:15px;
+    --gap:6px;
+    --pad:8px;
+    border-radius:17px;
   }
 
   .cell,.tile-face {
-    border-radius:8px;
+    border-radius:11px;
   }
 
   .score {
-    min-width:76px;
-    padding:7px 9px;
+    min-width:73px;
+    padding:7px 8px;
   }
 
   .score strong {
     font-size:21px;
   }
 
-  .tile strong {
-    padding-bottom:3px;
-  }
-
-  .legend {
-    grid-template-columns:repeat(3,minmax(0,1fr));
+  #newGame {
+    padding:9px 11px;
+    font-size:13px;
   }
 }
 
 @media(prefers-reduced-motion:reduce) {
-  * {
-    scroll-behavior:auto !important;
-  }
-
   .tile {
     will-change:auto;
   }
@@ -381,7 +368,7 @@ dialog p {
     <a href="index.html">小窩</a>
   </header>
 
-  <p class="subtitle">6 × 6 大棋盤 · 把相同兔兔合成新朋友</p>
+  <p class="subtitle">兩隻一樣的小兔兔，合成一位新朋友。</p>
 
   <section class="top">
     <div class="scores">
@@ -401,7 +388,7 @@ dialog p {
   <div class="board" id="board"
     tabindex="0"
     role="group"
-    aria-label="六乘六兔兔2048棋盤，滑動或按方向鍵移動">
+    aria-label="四乘四兔兔2048棋盤，滑動或按方向鍵移動">
     <div class="cells" id="cells" aria-hidden="true"></div>
     <div class="tiles" id="tiles"></div>
   </div>
@@ -411,8 +398,8 @@ dialog p {
 
   <p class="help">
     手機上下左右滑動，電腦使用方向鍵。<br>
-    相同數字碰在一起就會合併；每次有效移動後出現 2 或 4。<br>
-    合成 2048 即可達成目標，也能繼續挑戰更大的兔兔。
+    相同數字相遇就會合併，每次有效移動後新增 2 或 4。<br>
+    合成 2048 後，也可以繼續挑戰更大的兔兔。
   </p>
 
   <details class="collection">
@@ -430,11 +417,11 @@ dialog p {
 
 (() => {
   const $ = id => document.getElementById(id);
-  const SIZE = 6;
+  const SIZE = 4;
   const COUNT = SIZE * SIZE;
 
-  // 與舊版4×4分開保存。
-  const KEY = "bunny-2048-6x6-save-v1";
+  // 沿用原本4×4的儲存名稱。
+  const KEY = "bunny-2048-save-v1";
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
   const RABBITS = [
@@ -461,16 +448,18 @@ dialog p {
   let busy = false;
   let pointer = null;
   let pendingResize = false;
-  let observedWidth = 0;
+  let resizeScheduled = false;
 
-  const say = value => $("message").textContent = value;
+  const say = value => {
+    $("message").textContent = value;
+  };
 
   function typeFor(value) {
     const index = Math.max(0,Math.log2(value)-1);
     return RABBITS[Math.min(index,RABBITS.length-1)];
   }
 
-  /* ---------- 只有耳朵、腦袋、表情 ---------- */
+  /* ---------- 兔耳、腦袋及表情 ---------- */
 
   function rabbitSVG(value) {
     const type = typeFor(value);
@@ -480,29 +469,35 @@ dialog p {
     const lop = type.breed === 1 || type.breed === 2;
     const fluffy = type.breed === 2;
     const dutch = type.breed === 3;
-    const face = Math.round(Math.log2(value)) % 4;
+    const expression = Math.round(Math.log2(value)) % 4;
 
     const eyes = [
-      `<ellipse cx="83" cy="110" rx="4.5" ry="6" fill="#49362f"/>
-       <ellipse cx="121" cy="110" rx="4.5" ry="6" fill="#49362f"/>
-       <circle cx="84.5" cy="108" r="1.6" fill="white"/>
-       <circle cx="122.5" cy="108" r="1.6" fill="white"/>`,
-
-      `<path d="M77 112q6-10 12 0m26 0q6-10 12 0"
-        fill="none" stroke="${ink}" stroke-width="2.3"
-        stroke-linecap="round"/>`,
-
-      `<path d="M77 111q6-9 12 0" fill="none"
-        stroke="${ink}" stroke-width="2.3" stroke-linecap="round"/>
-       <ellipse cx="121" cy="110" rx="4.5" ry="6" fill="#49362f"/>
-       <circle cx="122.5" cy="108" r="1.6" fill="white"/>`,
-
-      `<path d="M83 117l-6-6a3.8 3.8 0 0 1 6-4.5
-         a3.8 3.8 0 0 1 6 4.5Z
-         M121 117l-6-6a3.8 3.8 0 0 1 6-4.5
-         a3.8 3.8 0 0 1 6 4.5Z"
-         fill="#cc668d"/>`
-    ][face];
+      `
+        <ellipse cx="83" cy="110" rx="4.5" ry="6" fill="#49362f"/>
+        <ellipse cx="121" cy="110" rx="4.5" ry="6" fill="#49362f"/>
+        <circle cx="84.5" cy="108" r="1.6" fill="white"/>
+        <circle cx="122.5" cy="108" r="1.6" fill="white"/>
+      `,
+      `
+        <path d="M77 112q6-10 12 0m26 0q6-10 12 0"
+          fill="none" stroke="${ink}" stroke-width="2.3"
+          stroke-linecap="round"/>
+      `,
+      `
+        <path d="M77 111q6-9 12 0"
+          fill="none" stroke="${ink}" stroke-width="2.3"
+          stroke-linecap="round"/>
+        <ellipse cx="121" cy="110" rx="4.5" ry="6" fill="#49362f"/>
+        <circle cx="122.5" cy="108" r="1.6" fill="white"/>
+      `,
+      `
+        <path d="M83 117l-6-6a3.8 3.8 0 0 1 6-4.5
+          a3.8 3.8 0 0 1 6 4.5Z
+          M121 117l-6-6a3.8 3.8 0 0 1 6-4.5
+          a3.8 3.8 0 0 1 6 4.5Z"
+          fill="#cc668d"/>
+      `
+    ][expression];
 
     return `
       <svg viewBox="32 0 140 154" aria-hidden="true">
@@ -536,8 +531,8 @@ dialog p {
             M137 85q23 4 19 36l-7 23q-5 10-14-3l-10-35"
             fill="${fur}" stroke="${ink}" stroke-width="2"/>
           <path d="M55 103q-5 19 1 31m86-30q5 18-1 31"
-            stroke="#e2b1c0" stroke-width="6" fill="none"
-            stroke-linecap="round"/>
+            stroke="#e2b1c0" stroke-width="6"
+            fill="none" stroke-linecap="round"/>
         ` : ""}
 
         ${fluffy ? `
@@ -575,11 +570,11 @@ dialog p {
     `;
   }
 
-  /* ---------- 存檔 ---------- */
+  /* ---------- 儲存 ---------- */
 
   function validSave(data) {
     return data?.version === 1 &&
-      data.size === SIZE &&
+      (data.size === undefined || data.size === SIZE) &&
       Array.isArray(data.board) &&
       data.board.length === COUNT &&
       data.board.some(value => value > 0) &&
@@ -612,7 +607,7 @@ dialog p {
     }
   }
 
-  /* ---------- 格子定位：讀實際位置 ---------- */
+  /* ---------- 精確定位背景格子 ---------- */
 
   function getSlots() {
     const layer = $("tiles").getBoundingClientRect();
@@ -630,21 +625,20 @@ dialog p {
   }
 
   function makeTile(value,index,slots) {
-    const location = slots[index];
+    const slot = slots[index];
     const type = typeFor(value);
     const tile = document.createElement("div");
 
     tile.className = "tile";
-    tile.style.width = location.width+"px";
-    tile.style.height = location.height+"px";
-    tile.style.left = location.x+"px";
-    tile.style.top = location.y+"px";
+    tile.style.width = slot.width+"px";
+    tile.style.height = slot.height+"px";
+    tile.style.left = slot.x+"px";
+    tile.style.top = slot.y+"px";
 
     const digits = String(value).length;
-    const normalSize = Math.min(28,location.width*.31);
     const numberSize = Math.max(
-      10,
-      Math.min(normalSize,location.width/(digits*.64+1))
+      11,
+      Math.min(33,slot.width*.31,slot.width/(digits*.64+1))
     );
 
     tile.style.setProperty("--tile-bg",type.bg);
@@ -688,14 +682,17 @@ dialog p {
           merged.includes(index)
             ? [
                 {transform:"scale(.88)"},
-                {transform:"scale(1.10)",offset:.55},
+                {transform:"scale(1.1)",offset:.55},
                 {transform:"scale(1)"}
               ]
             : [
                 {transform:"scale(.4)",opacity:0},
                 {transform:"scale(1)",opacity:1}
               ],
-          {duration:180,easing:"ease-out"}
+          {
+            duration:180,
+            easing:"ease-out"
+          }
         );
       }
     });
@@ -703,7 +700,7 @@ dialog p {
     updateScore();
   }
 
-  /* ---------- 標準2048合併規則 ---------- */
+  /* ---------- 標準2048規則 ---------- */
 
   function addTile() {
     const empty = board
@@ -734,9 +731,13 @@ dialog p {
 
     for (let line=0;line<SIZE;line++) {
       const indices = lineIndices(direction,line);
+
       const items = indices
         .filter(index => board[index] !== 0)
-        .map(index => ({value:board[index],from:index}));
+        .map(index => ({
+          value:board[index],
+          from:index
+        }));
 
       let output = 0;
 
@@ -795,7 +796,7 @@ dialog p {
     return false;
   }
 
-  /* ---------- 動畫 ---------- */
+  /* ---------- 滑動動畫 ---------- */
 
   async function animateMove(movements) {
     const slots = getSlots();
@@ -841,7 +842,7 @@ dialog p {
       <h2>2048 兔兔出現喇！</h2>
       <p>
         合成成功！目前 ${score.toLocaleString()} 分。<br>
-        六乘六小窩仲有空間，繼續迎接新兔兔？
+        仲可以繼續迎接更大數字嘅兔兔～
       </p>
       <div class="dialog-actions">
         <button type="button" class="primary" data-continue>
@@ -873,8 +874,16 @@ dialog p {
     const result = calculate(direction);
 
     if (!result.changed) {
-      if (!hasMoves()) showDialog(false);
-      else say("呢個方向郁唔到，試下另一邊呀～");
+      if (!hasMoves()) {
+        showDialog(false);
+      } else {
+        say("呢個方向郁唔到，試下另一邊呀～");
+      }
+      return;
+    }
+
+    if (!Number.isSafeInteger(score+result.gain)) {
+      say("分數已達此版本的計算上限，請開始新遊戲。");
       return;
     }
 
@@ -900,9 +909,11 @@ dialog p {
 
       save();
 
-      if (newWin) showDialog(true);
-      else if (!hasMoves()) showDialog(false);
-
+      if (newWin) {
+        showDialog(true);
+      } else if (!hasMoves()) {
+        showDialog(false);
+      }
     } catch (error) {
       console.error("2048 move:",error);
       render();
@@ -931,10 +942,10 @@ dialog p {
 
     render(spawned);
     save();
-    say("六乘六小窩開張！滑動幫兔兔搵朋友啦～");
+    say("兩隻一樣嘅兔兔碰埋，就會有新朋友呀～");
   }
 
-  /* ---------- 手機滑動 ---------- */
+  /* ---------- 手機操作 ---------- */
 
   function clearPointer() {
     const previous = pointer;
@@ -947,6 +958,13 @@ dialog p {
         $("board").releasePointerCapture(previous.id);
       }
     } catch {}
+  }
+
+  function finishDeferredResize() {
+    if (pendingResize && !busy && !pointer) {
+      pendingResize = false;
+      render();
+    }
   }
 
   $("board").addEventListener("pointerdown",event => {
@@ -981,15 +999,13 @@ dialog p {
     const original = pointer;
     const dx = event.clientX-original.x;
     const dy = event.clientY-original.y;
+    const wasResized = pendingResize;
 
     clearPointer();
+    finishDeferredResize();
 
-    if (pendingResize) {
-      pendingResize = false;
-      render();
-      return;
-    }
-
+    // 旋轉螢幕或改變尺寸時取消當次滑動。
+    if (wasResized) return;
     if (Math.max(Math.abs(dx),Math.abs(dy))<16) return;
 
     move(
@@ -1001,20 +1017,22 @@ dialog p {
 
   $("board").addEventListener("pointercancel",() => {
     clearPointer();
-
-    if (pendingResize && !busy) {
-      pendingResize = false;
-      render();
-    }
+    finishDeferredResize();
   });
 
   $("board").addEventListener("lostpointercapture",event => {
-    if (pointer?.id === event.pointerId) clearPointer();
+    if (pointer?.id === event.pointerId) {
+      clearPointer();
+      finishDeferredResize();
+    }
   });
 
-  window.addEventListener("blur",clearPointer);
+  window.addEventListener("blur",() => {
+    clearPointer();
+    finishDeferredResize();
+  });
 
-  /* ---------- 電腦方向鍵 ---------- */
+  /* ---------- 電腦操作 ---------- */
 
   const directions = {
     ArrowLeft:"left",
@@ -1025,11 +1043,13 @@ dialog p {
 
   document.addEventListener("keydown",event => {
     if (!(event.key in directions) || $("dialog").open) return;
-
     if (event.target.closest("input,textarea,select")) return;
 
     event.preventDefault();
-    if (!event.repeat) move(directions[event.key]);
+
+    if (!event.repeat) {
+      move(directions[event.key]);
+    }
   });
 
   /* ---------- 按鈕 ---------- */
@@ -1084,7 +1104,7 @@ dialog p {
     const data = JSON.parse(localStorage.getItem(KEY));
 
     if (validSave(data)) {
-      board = data.board;
+      board = [...data.board];
       score = data.score;
       best = Math.max(data.best,score);
       won = data.won;
@@ -1107,30 +1127,27 @@ dialog p {
     newGame();
   }
 
-  /*
-   * 棋盤實際寬度改變後，重新讀取背景格子位置。
-   * 動畫或手勢進行中則延後處理。
-   */
-  function handleResize() {
-    const width = $("board").getBoundingClientRect().width;
+  /* 棋盤尺寸變動時重新對齊，不清除遊戲進度。 */
+  function requestLayout() {
+    if (resizeScheduled) return;
+    resizeScheduled = true;
 
-    if (Math.abs(width-observedWidth)<.5) return;
-    observedWidth = width;
+    requestAnimationFrame(() => {
+      resizeScheduled = false;
 
-    if (busy || pointer) {
-      pendingResize = true;
-    } else {
-      render();
-    }
+      if (busy || pointer) {
+        pendingResize = true;
+      } else {
+        render();
+      }
+    });
   }
 
-  observedWidth = $("board").getBoundingClientRect().width;
-
   if ("ResizeObserver" in window) {
-    const observer = new ResizeObserver(handleResize);
+    const observer = new ResizeObserver(requestLayout);
     observer.observe($("board"));
   } else {
-    window.addEventListener("resize",handleResize);
+    window.addEventListener("resize",requestLayout);
   }
 })();
 </script>
