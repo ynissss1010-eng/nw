@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+ content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fff4f7">
+<title>消消兔 · Bunny accounting</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Nunito:wght@600;800;900&display=swap");
+:root{
+ --bg:#fff5f7;--paper:#fffdfa;--ink:#563c47;
+ --muted:#87717a;--line:#ecdce3;--accent:#a94f76;
+}
+*{box-sizing:border-box}
+body{
+ margin:0;background:var(--bg);color:var(--ink);
+ font:15px/1.6 "Nunito","LXGW WenKai TC","Microsoft JhengHei",sans-serif;
+}
+button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button{
+ font:inherit;cursor:pointer;border:1px solid var(--line);
+ border-radius:12px;padding:9px 14px;background:var(--paper);color:inherit;
+ min-height:43px;
+}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,a:focus-visible{
+ outline:3px solid var(--accent);outline-offset:3px;
+}
+a{color:var(--accent);text-decoration:none}
+.primary{background:var(--accent);color:white;border-color:var(--accent)}
+.wrap{width:min(560px,100%);margin:auto;padding:18px 14px 30px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+header a{font-size:13px}
+h1{font-size:31px;letter-spacing:-1px;margin:0}
+.subtitle{text-align:center;font-size:12px;color:var(--muted);margin:6px 0 17px}
+.top{
+ display:flex;justify-content:space-between;align-items:center;gap:10px;
+ margin-bottom:13px;
+}
+.level{font-size:18px;font-weight:800}
+.tag{font-size:11px;color:var(--accent);background:#f5e1eb;padding:4px 9px;border-radius:8px}
+.stats{
+ display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:12px;
+}
+.stat{background:var(--paper);border:1px solid var(--line);padding:10px;border-radius:14px;text-align:center}
+.stat span{display:block;font-size:11px;color:var(--muted)}
+.stat strong{display:block;font-size:23px;line-height:1.3}
+.progress{height:6px;background:#ebdce3;border-radius:8px;overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.mission{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+ background:#fffdfa;border:1px solid var(--line);padding:9px 13px;
+ border-radius:13px;margin-bottom:12px;
+}
+.mission .rabbit{width:43px;height:43px}
+.mission small{color:var(--muted);font-size:11px}
+.mission strong{font-size:15px}
+.board{
+ display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+ gap:5px;padding:9px;background:#ead6e1;border-radius:19px;
+ user-select:none;-webkit-user-select:none;touch-action:none;
+}
+.tile{
+ position:relative;width:100%;aspect-ratio:1;min-height:0;padding:0;
+ border:2px solid transparent;border-radius:12px;
+ background:#fffaf4;overflow:hidden;display:grid;place-items:center;
+}
+.tile svg{display:block;width:100%;height:100%;pointer-events:none}
+.tile.selected{border-color:#a94f76;background:#ffe7f0;box-shadow:0 0 0 2px #fff8 inset}
+.tile.hinted{border-color:#c18a40;animation:hint 1s ease-in-out infinite}
+.tile.popping{animation:pop .18s ease forwards}
+.tile.arriving{animation:arrive .2s ease both}
+@keyframes pop{to{transform:scale(.25);opacity:0}}
+@keyframes arrive{from{transform:translateY(-10px);opacity:.4}to{transform:translateY(0);opacity:1}}
+@keyframes hint{50%{background:#ffe7a8}}
+.actions{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.actions button{font-size:12px}
+.message{min-height:44px;text-align:center;color:var(--accent);font-size:13px;padding:13px 5px 0}
+.help{font-size:11px;color:var(--muted);text-align:center;line-height:1.9}
+footer{text-align:center;color:var(--muted);font-size:10px;margin-top:22px}
+dialog{
+ width:min(490px,calc(100% - 24px));max-height:85dvh;overflow:auto;
+ border:1px solid var(--line);border-radius:21px;padding:24px;
+ background:var(--paper);color:var(--ink);
+}
+dialog::backdrop{background:#50334377}
+dialog h2{text-align:center;margin:0 0 10px;font-size:26px}
+dialog p{text-align:center;font-size:13px;color:var(--muted)}
+.dialog-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:9px;margin-top:20px}
+.levels{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:17px}
+.levels button{padding:9px 3px;font-weight:800}
+.levels button small{display:block;font-size:9px;min-height:14px}
+.levels .current{border-color:var(--accent);background:#fae3ec}
+.trophy{font-size:39px;text-align:center}
+@media(max-width:380px){
+ .wrap{padding:12px 9px 25px}.board{gap:3px;padding:6px;border-radius:14px}
+ .tile{border-radius:9px}.stat{padding:8px 4px}.stat strong{font-size:21px}
+ h1{font-size:27px}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{animation:none!important;transition:none!important}
+}
+/* 連貫拖曳與掉落效果 */
+.board {
+  position: relative;
+  isolation: isolate;
+}
+
+.tile {
+  position: relative;
+  overflow: visible;
+  will-change: transform;
+  transform-origin: center;
+}
+
+.tile svg {
+  border-radius: 10px;
+}
+
+.tile.dragging {
+  z-index: 10;
+  cursor: grabbing;
+  filter: drop-shadow(0 5px 5px #73405725);
+}
+
+.tile.drag-neighbour {
+  z-index: 9;
+}
+
+.tile.selected {
+  box-shadow: 0 0 0 2px #fff8 inset;
+}
+
+/* 改由 JavaScript 控制實際下落距離 */
+.tile.arriving,
+.tile.popping {
+  animation: none;
+}
+
+.board {
+  cursor: grab;
+}
+
+.board.is-dragging {
+  cursor: grabbing;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile {
+    will-change: auto;
+  }
+}
+
+</style>
+</head>
+<body>
+<main class="wrap">
+<header>
+ <a href="index.html">← 返回小窩</a>
+ <h1>消消兔</h1>
+ <button id="levelsButton" type="button">選關</button>
+</header>
+
+<div class="top">
+ <strong class="level" id="levelLabel"></strong>
+ <span class="tag" id="typeLabel"></span>
+</div>
+
+<section class="stats">
+ <div class="stat"><span>分數</span><strong id="score">0</strong></div>
+ <div class="stat"><span>目標</span><strong id="target">0</strong>
+  <div class="progress"><i id="scoreBar"></i></div>
+ </div>
+ <div class="stat"><span>剩餘步數</span><strong id="moves">0</strong></div>
+</section>
+
+<section class="mission" id="mission"></section>
+<div class="board" id="board" role="group" aria-label="兔兔三消棋盤"></div>
+
+<div class="actions">
+ <button id="hintButton" type="button">找一找</button>
+ <button id="shuffleButton" type="button">重新洗牌 · 本關一次</button>
+ <button id="restartButton" type="button">重玩本關</button>
+</div>
+<div class="message" id="message" role="status" aria-live="polite"></div>
+<p class="help">
+ 點兩隻相鄰兔兔，或按住滑動交換。<br>
+ 三隻相同兔兔連線即可消除；四隻、五隻及連鎖有加分。<br>
+ 同時完成分數與收集目標即可過關。無法消除的交換不扣步數。
+</p>
+<footer>Made by Yanice Mai</footer>
+</main>
+<dialog id="dialog"></dialog>
+
+<script>
+"use strict";
+(() => {
+ const $=id=>document.getElementById(id);
+ const SIZE=7;
+ const KEY="bunny-match-progress-v1";
+ const TYPES=[
+  {name:"奶油侏儒兔",breed:0,fur:"#fff7e8",bg:"#fff8e9"},
+  {name:"奶茶垂耳兔",breed:1,fur:"#dfc7a4",bg:"#f8efdf"},
+  {name:"可可長毛垂耳兔",breed:2,fur:"#b59a8e",bg:"#f3e7e1"},
+  {name:"芝麻豆奇兔",breed:3,fur:"#77717d",bg:"#eeebf5"},
+  {name:"灰色侏儒兔",breed:0,fur:"#acb6bf",bg:"#eaf1f5"},
+  {name:"白色垂耳兔",breed:1,fur:"#fffaf0",bg:"#faeaf1"}
+ ];
+
+ /*
+  * 50 個固定關卡。
+  * 前 10 關四種兔兔；11–25 關五種；26–50 關六種。
+  * 每關種子、步數、分數和收集目標固定，補充兔兔隨機。
+  */
+ const LEVELS=Array.from({length:50},(_,i)=>{
+  const n=i+1;
+  return{
+   n,
+   seed:20261117+n*7919,
+   types:n<=10?4:n<=25?5:6,
+   moves:n<=10?30:n<=25?32:35,
+   target:1500+i*65,
+   collectType:i%(n<=10?4:n<=25?5:6),
+   collect:n===1?0:8+Math.floor(i*.36)
+  };
+ });
+
+ let progress={unlocked:1,best:{},stars:{}};
+ try{
+  const p=JSON.parse(localStorage.getItem(KEY));
+  if(p&&Number.isInteger(p.unlocked)&&p.unlocked>=1&&p.unlocked<=50){
+   progress={
+    unlocked:p.unlocked,
+    best:p.best&&typeof p.best==="object"?p.best:{},
+    stars:p.stars&&typeof p.stars==="object"?p.stars:{}
+   };
+  }
+ }catch{}
+
+ let level,grid=[],score=0,moves=0,collected=0;
+ let selected=-1,busy=false,finished=false,usedShuffle=false;
+ let pointer=null,swipeClickUntil=0;
+ let random=Math.random;
+
+ function persist(){
+  try{localStorage.setItem(KEY,JSON.stringify(progress))}catch{
+   say("瀏覽器未能保存進度，今次仍可繼續遊玩。");
+  }
+ }
+
+ function seeded(seed){
+  return()=>{
+   seed|=0;seed=seed+0x6D2B79F5|0;
+   let t=Math.imul(seed^seed>>>15,1|seed);
+   t=t+Math.imul(t^t>>>7,61|t)^t;
+   return((t^t>>>14)>>>0)/4294967296;
+  };
+ }
+
+ function rabbit(type){
+  const t=TYPES[type],c=t.fur,s="#735b55",w="#fffaf2";
+  const lop=t.breed===1||t.breed===2;
+  const fuzzy=t.breed===2,dutch=t.breed===3;
+  return `<svg class="rabbit" viewBox="25 0 180 208" aria-hidden="true">
+   <rect x="25" width="180" height="208" fill="${t.bg}"/>
+   <ellipse cx="117" cy="191" rx="56" ry="6" fill="#bba9a3" opacity=".12"/>
+   <circle cx="173" cy="156" r="14" fill="${w}" stroke="${s}" stroke-width="2"/>
+   <ellipse cx="119" cy="155" rx="48" ry="35" fill="${c}" stroke="${s}" stroke-width="2"/>
+   ${dutch?`<path d="M93 123q18-6 29 1l7 64q-20 5-35-4Z" fill="${w}"/>`:""}
+   <ellipse cx="88" cy="187" rx="20" ry="7" fill="${dutch?w:c}" stroke="${s}" stroke-width="2"/>
+   <ellipse cx="140" cy="187" rx="21" ry="7" fill="${c}" stroke="${s}" stroke-width="2"/>
+   ${!lop?`<path d="M78 88Q58 15 75 10Q92 8 96 85
+    M111 85Q114 10 131 13Q147 17 129 93" fill="${c}" stroke="${s}" stroke-width="2"/>
+    <path d="M79 66Q69 21 77 24l9 43M120 68q5-45 13-42l-6 45" fill="#e6b7c5"/>`:""}
+   ${fuzzy?`<path d="m65 95-11 13 7 8-8 13 11 5-5 15 14 1 1 13 16-4 8 10 13-8 12 7 9-12 16 3 1-14 12-5-7-13 7-11-11-8 2-13-14 1-5-11-13 6-9-8-11 8-13-5-5 11Z" fill="${c}" stroke="${s}" stroke-width="1.7"/>`:""}
+   <ellipse cx="102" cy="113" rx="43" ry="37" fill="${c}" stroke="${s}" stroke-width="2"/>
+   ${dutch?`<path d="m102 76-13 36q-9 19-1 32 14 9 29-1 6-15-3-31Z" fill="${w}"/>`:""}
+   ${lop?`<path d="M67 85Q40 83 43 117l4 30q4 16 15 5l15-46
+    M136 84q23 4 20 36l-7 30q-5 13-14 1l-10-44" fill="${c}" stroke="${s}" stroke-width="2"/>
+    <path d="M55 102q-5 19 1 35m86-35q6 20-1 36" stroke="#deb0bd" stroke-width="6" fill="none" stroke-linecap="round"/>`:""}
+   ${fuzzy?`<path d="m72 89 7-11 7 6 9-10 8 7 10-6 6 10 10-2" fill="${c}" stroke="${s}" stroke-width="1.6"/>`:""}
+   <ellipse cx="84" cy="110" rx="4" ry="5" fill="#45332f"/>
+   <ellipse cx="120" cy="110" rx="4" ry="5" fill="#45332f"/>
+   <circle cx="85" cy="108" r="1.4" fill="white"/>
+   <circle cx="121" cy="108" r="1.4" fill="white"/>
+   <ellipse cx="76" cy="123" rx="8" ry="4" fill="#ea9eb5" opacity=".65"/>
+   <ellipse cx="128" cy="123" rx="8" ry="4" fill="#ea9eb5" opacity=".65"/>
+   <path d="M98 121q4-3 8 0l-4 4Z" fill="#b97c8e"/>
+   <path d="M102 125v4m0 0q-5 5-9 0m9 0q5 5 9 0"
+    fill="none" stroke="${s}" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`;
+ }
+
+ function say(message){$("message").textContent=message}
+ const adjacent=(a,b)=>Math.abs(Math.floor(a/SIZE)-Math.floor(b/SIZE))+
+  Math.abs(a%SIZE-b%SIZE)===1;
+
+ function matches(board){
+  const found=new Set();
+  const groups=[];
+
+  function scan(indices){
+   let start=0;
+   while(start<indices.length){
+    let end=start+1;
+    const value=board[indices[start]];
+    while(end<indices.length&&board[indices[end]]===value)end++;
+    if(value>=0&&end-start>=3){
+     const group=indices.slice(start,end);
+     groups.push(group);
+     group.forEach(i=>found.add(i));
+    }
+    start=end;
+   }
+  }
+
+  for(let r=0;r<SIZE;r++)scan(Array.from({length:SIZE},(_,c)=>r*SIZE+c));
+  for(let c=0;c<SIZE;c++)scan(Array.from({length:SIZE},(_,r)=>r*SIZE+c));
+  return{found,groups};
+ }
+
+ function swap(board,a,b){[board[a],board[b]]=[board[b],board[a]]}
+
+ function legalMove(board){
+  for(let i=0;i<board.length;i++){
+   for(const j of [i+1,i+SIZE]){
+    if(j>=board.length||!adjacent(i,j))continue;
+    swap(board,i,j);
+    const valid=matches(board).found.size>0;
+    swap(board,i,j);
+    if(valid)return[i,j];
+   }
+  }
+  return null;
+ }
+
+ function generate(){
+  for(let attempt=0;attempt<300;attempt++){
+   const board=[];
+   for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+     const allowed=[];
+     for(let type=0;type<level.types;type++){
+      if(c>=2&&board[r*SIZE+c-1]===type&&board[r*SIZE+c-2]===type)continue;
+      if(r>=2&&board[(r-1)*SIZE+c]===type&&board[(r-2)*SIZE+c]===type)continue;
+      allowed.push(type);
+     }
+     board.push(allowed[Math.floor(random()*allowed.length)]);
+    }
+   }
+   if(legalMove(board))return board;
+  }
+  throw Error("無法建立棋盤，請重新開啟關卡。");
+ }
+
+ // 每一格的實際下落距離，單位是格數。
+let fallOffsets = null;
+
+const reduceMotion = matchMedia(
+  "(prefers-reduced-motion: reduce)"
+);
+
+function tileAt(index) {
+  return $("board").querySelector(`[data-cell="${index}"]`);
+}
+
+function tilePitch() {
+  const first = tileAt(0);
+  const second = tileAt(1);
+
+  if (!first || !second) return 50;
+
+  return second.getBoundingClientRect().left -
+    first.getBoundingClientRect().left;
+}
+
+function renderBoard(arriving = false) {
+  const board = $("board");
+  board.setAttribute("aria-busy", String(busy));
+
+  /*
+   * 格子只建立一次。
+   * 後續更新圖片及狀態，保留按鈕節點、焦點和事件。
+   */
+  if (board.children.length !== SIZE * SIZE) {
+    board.replaceChildren();
+
+    for (let i = 0; i < SIZE * SIZE; i++) {
+      const button = document.createElement("button");
+
+      button.type = "button";
+      button.className = "tile";
+      button.dataset.cell = i;
+
+      board.append(button);
+    }
+  }
+
+  const pitch = tilePitch();
+
+  grid.forEach((type, index) => {
+    const button = tileAt(index);
+
+    // 清除上一次尚未結束的動畫。
+    button.getAnimations().forEach(animation => animation.cancel());
+
+    button.style.transform = "";
+    button.style.zIndex = "";
+    button.className = "tile";
+    button.classList.toggle("selected", selected === index);
+
+    button.setAttribute(
+      "aria-label",
+      `第${Math.floor(index / SIZE) + 1}行，第${index % SIZE + 1}格，${TYPES[type].name}`
+    );
+
+    button.setAttribute(
+      "aria-pressed",
+      String(selected === index)
+    );
+
+    if (button.dataset.type !== String(type)) {
+      button.innerHTML = rabbit(type);
+      button.dataset.type = String(type);
+    }
+
+    const rows = arriving ? fallOffsets?.[index] || 0 : 0;
+
+    if (rows > 0 && !reduceMotion.matches) {
+      button.animate(
+        [
+          {
+            transform: `translateY(${-rows * pitch}px)`,
+            opacity: rows >= SIZE ? 0 : 0.75
+          },
+          {
+            transform: "translateY(3px)",
+            opacity: 1,
+            offset: 0.85
+          },
+          {
+            transform: "translateY(0)",
+            opacity: 1
+          }
+        ],
+        {
+          duration: Math.min(460, 230 + rows * 35),
+          easing: "cubic-bezier(.22,.65,.35,1)",
+          fill: "backwards"
+        }
+      );
+    }
+  });
+
+  fallOffsets = null;
+}
+
+async function slideTile(element, x, y, duration = 170) {
+  if (!element) return;
+
+  const start = getComputedStyle(element).transform;
+  const end = `translate(${x}px, ${y}px)`;
+
+  if (reduceMotion.matches) {
+    element.style.transform = end;
+    return;
+  }
+
+  const animation = element.animate(
+    [
+      { transform: start === "none" ? "translate(0,0)" : start },
+      { transform: end }
+    ],
+    {
+      duration,
+      easing: "cubic-bezier(.2,.75,.25,1)",
+      fill: "forwards"
+    }
+  );
+
+  try {
+    await animation.finished;
+  } catch {}
+
+  element.style.transform = end;
+  animation.cancel();
+}
+
+async function animateSwap(a, b) {
+  const first = tileAt(a);
+  const second = tileAt(b);
+  const pitch = tilePitch();
+
+  const dx = (b % SIZE - a % SIZE) * pitch;
+  const dy = (
+    Math.floor(b / SIZE) - Math.floor(a / SIZE)
+  ) * pitch;
+
+  first.style.zIndex = "10";
+  second.style.zIndex = "9";
+
+  await Promise.all([
+    slideTile(first, dx, dy),
+    slideTile(second, -dx, -dy)
+  ]);
+}
+
+async function returnTiles(indices) {
+  await Promise.all(
+    [...new Set(indices)].map(index =>
+      slideTile(tileAt(index), 0, 0, 160)
+    )
+  );
+
+  indices.forEach(index => {
+    const tile = tileAt(index);
+    tile?.classList.remove("dragging", "drag-neighbour");
+    if (tile) tile.style.zIndex = "";
+  });
+}
+
+function collapseBoard() {
+  const offsets = Array(SIZE * SIZE).fill(0);
+
+  for (let column = 0; column < SIZE; column++) {
+    const survivors = [];
+
+    // 由下面開始記住兔兔原本所在的行。
+    for (let row = SIZE - 1; row >= 0; row--) {
+      const value = grid[row * SIZE + column];
+
+      if (value >= 0) {
+        survivors.push({ value, oldRow: row });
+      }
+    }
+
+    const missing = SIZE - survivors.length;
+
+    for (let row = SIZE - 1; row >= 0; row--) {
+      const index = row * SIZE + column;
+
+      if (survivors.length) {
+        const tile = survivors.shift();
+
+        grid[index] = tile.value;
+        offsets[index] = row - tile.oldRow;
+      } else {
+        grid[index] = Math.floor(random() * level.types);
+
+        // 新兔兔從棋盤上方滑入。
+        offsets[index] = missing;
+      }
+    }
+  }
+
+  fallOffsets = offsets;
+}
+
+
+ function updateUI(){
+  $("levelLabel").textContent=`第 ${level.n} / 50 關`;
+  $("typeLabel").textContent=`${level.types} 種兔兔`;
+  $("score").textContent=score;
+  $("target").textContent=level.target;
+  $("moves").textContent=moves;
+  $("scoreBar").style.width=Math.min(100,score/level.target*100)+"%";
+
+  $("mission").innerHTML=level.collect?
+   `<div style="display:flex;align-items:center;gap:9px">
+     ${rabbit(level.collectType)}
+     <div><small>本關收集</small><br><strong>${TYPES[level.collectType].name}</strong></div>
+    </div><strong>${Math.min(collected,level.collect)} / ${level.collect}</strong>`:
+   `<div><strong>新手暖身關</strong><br><small>先試試交換兔兔，達到目標分數就過關。</small></div>`;
+
+  $("hintButton").disabled=busy||finished;
+  $("shuffleButton").disabled=busy||finished||usedShuffle;
+  $("restartButton").disabled=busy;
+  $("levelsButton").disabled=busy;
+ }
+
+ function loadLevel(n){
+  level=LEVELS[Math.max(0,Math.min(49,n-1))];
+  random=seeded(level.seed);
+  score=0;moves=level.moves;collected=0;
+  selected=-1;busy=false;finished=false;usedShuffle=false;
+  pointer=null;
+  grid=generate();
+  renderBoard();
+  updateUI();
+  say(level.n===1?"兔兔排好隊喇～試下連埋三隻一樣嘅兔兔！":"先睇清楚收集目標，再開始交換呀～");
+ }
+
+ function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+
+ async function reshuffle(automatic=false){
+  // 優先保留棋盤上兔兔的數量，只改位置。
+  let candidate;
+  let success=false;
+
+  for(let attempt=0;attempt<250;attempt++){
+   candidate=[...grid];
+   for(let i=candidate.length-1;i>0;i--){
+    const j=Math.floor(random()*(i+1));
+    [candidate[i],candidate[j]]=[candidate[j],candidate[i]];
+   }
+   if(!matches(candidate).found.size&&legalMove(candidate)){
+    success=true;break;
+   }
+  }
+
+  grid=success?candidate:generate();
+  selected=-1;
+  renderBoard(true);
+  say(automatic?"兔兔冇路行喇，自動重新排隊，唔扣步數～":"兔兔重新排好隊喇！");
+  await delay(220);
+ }
+
+ function finish(win){
+  finished=true;
+  selected=-1;
+  updateUI();
+
+  if(win){
+   const stars=score>=level.target*1.5?3:
+    score>=level.target*1.2?2:1;
+   progress.best[level.n]=Math.max(Number(progress.best[level.n])||0,score);
+   progress.stars[level.n]=Math.max(Number(progress.stars[level.n])||0,stars);
+   progress.unlocked=Math.max(progress.unlocked,Math.min(50,level.n+1));
+   persist();
+
+   $("dialog").innerHTML=`
+    <div class="trophy">♡</div>
+    <h2>${level.n===50?"五十關全部完成！":"過關喇！"}</h2>
+    <p>第 ${level.n} 關 · ${score} 分<br>${"★".repeat(stars)}${"☆".repeat(3-stars)}</p>
+    <p>${level.n===50?"兔兔宣布：你係消消兔高手！":"兔兔又排好隊，等你挑戰下一關～"}</p>
+    <div class="dialog-actions">
+     ${level.n<50?'<button class="primary" data-next>下一關</button>':'<button class="primary" data-level-menu>選擇關卡</button>'}
+     <button data-retry>重玩本關</button>
+     <a href="index.html">返回小窩</a>
+    </div>`;
+  }else{
+   $("dialog").innerHTML=`
+    <div class="trophy">…</div>
+    <h2>差少少呀！</h2>
+    <p>分數 ${score} / ${level.target}
+     ${level.collect?`<br>收集 ${Math.min(collected,level.collect)} / ${level.collect}`:""}</p>
+    <p>拍拍兔毛，再試一次？</p>
+    <div class="dialog-actions">
+     <button class="primary" data-retry>再試一次</button>
+     <button data-level-menu>選關</button>
+     <a href="index.html">返回小窩</a>
+    </div>`;
+  }
+
+  $("dialog").showModal();
+ }
+
+ async function attempt(a, b) {
+  if (busy || finished || !adjacent(a, b)) return;
+
+  busy = true;
+  selected = -1;
+  updateUI();
+
+  $("board").classList.remove("is-dragging");
+
+  try {
+    // 從目前手指拖到的位置，繼續滑到目標格。
+    await animateSwap(a, b);
+
+    swap(grid, a, b);
+    let result = matches(grid);
+
+    if (!result.found.size) {
+      /*
+       * 先把交換完成的圖片放進格子，
+       * 再播放反方向交換，最後恢復資料。
+       */
+      renderBoard();
+      await delay(60);
+      await animateSwap(a, b);
+
+      swap(grid, a, b);
+      renderBoard();
+
+      say("呢次未連成三隻，兔兔滑返原位喇～唔扣步數。");
+
+      busy = false;
+      updateUI();
+      return;
+    }
+
+    moves--;
+    renderBoard();
+
+    let chain = 0;
+
+    while (result.found.size) {
+      chain++;
+
+      const multiplier = 1 + Math.min(chain - 1, 5) * 0.25;
+
+      const bonus = result.groups.reduce(
+        (value, group) => value + Math.max(0, group.length - 3) * 40,
+        0
+      );
+
+      score += Math.round(
+        (result.found.size * 30 + bonus) * multiplier
+      );
+
+      const animations = [];
+
+      result.found.forEach(index => {
+        if (grid[index] === level.collectType) collected++;
+
+        const tile = tileAt(index);
+
+        if (!reduceMotion.matches) {
+          const animation = tile.animate(
+            [
+              { transform: "scale(1)", opacity: 1 },
+              { transform: "scale(1.12)", opacity: 1, offset: 0.3 },
+              { transform: "scale(.25)", opacity: 0 }
+            ],
+            {
+              duration: 220,
+              easing: "ease-in",
+              fill: "forwards"
+            }
+          );
+
+          animations.push(
+            animation.finished.catch(() => {})
+          );
+        }
+      });
+
+      say(chain > 1
+        ? `連鎖 ${chain}！兔兔一隻接一隻跳落嚟～`
+        : "啵！連埋一齊，消走喇～");
+
+      updateUI();
+
+      await Promise.all(animations);
+
+      result.found.forEach(index => {
+        grid[index] = -1;
+      });
+
+      collapseBoard();
+      renderBoard(true);
+
+      // 等掉落完成後再檢查連鎖。
+      await delay(reduceMotion.matches ? 0 : 480);
+
+      result = matches(grid);
+
+      if (chain >= 40 && result.found.size) {
+        grid = generate();
+        renderBoard();
+        break;
+      }
+    }
+
+    busy = false;
+
+    if (score >= level.target && collected >= level.collect) {
+      finish(true);
+      return;
+    }
+
+    if (moves <= 0) {
+      finish(false);
+      return;
+    }
+
+    if (!legalMove(grid)) {
+      busy = true;
+      updateUI();
+
+      await reshuffle(true);
+
+      busy = false;
+    }
+
+    updateUI();
+
+  } catch (error) {
+    console.error("交換動畫：", error);
+
+    busy = false;
+    selected = -1;
+    grid = generate();
+
+    renderBoard();
+    updateUI();
+
+    say("兔兔重新排好隊喇，繼續玩啦～");
+  }
+}
+
+
+ function choose(i){
+  if(busy||finished)return;
+  document.querySelectorAll(".hinted").forEach(el=>el.classList.remove("hinted"));
+
+  if(selected===i){selected=-1;renderBoard();return}
+  if(selected>=0&&adjacent(selected,i)){
+   const a=selected;attempt(a,i);return;
+  }
+  selected=i;renderBoard();
+ }
+
+ let draggingTile = null;
+
+$("board").addEventListener("click", event => {
+  if (performance.now() < swipeClickUntil) return;
+
+  const cell = event.target.closest("[data-cell]");
+  if (cell) choose(Number(cell.dataset.cell));
+});
+
+$("board").addEventListener("pointerdown", event => {
+  if (
+    !event.isPrimary ||
+    event.button !== 0 ||
+    busy ||
+    finished
+  ) return;
+
+  const cell = event.target.closest("[data-cell]");
+  if (!cell) return;
+
+  document.querySelectorAll(".hinted").forEach(element => {
+    element.classList.remove("hinted");
+  });
+
+  draggingTile = {
+    pointerId: event.pointerId,
+    index: Number(cell.dataset.cell),
+    startX: event.clientX,
+    startY: event.clientY,
+    axis: null,
+    neighbour: null,
+    offset: 0,
+    moved: false
+  };
+
+  try {
+    $("board").setPointerCapture(event.pointerId);
+  } catch {}
+});
+
+$("board").addEventListener("pointermove", event => {
+  const drag = draggingTile;
+
+  if (
+    !drag ||
+    drag.pointerId !== event.pointerId ||
+    busy
+  ) return;
+
+  const dx = event.clientX - drag.startX;
+  const dy = event.clientY - drag.startY;
+
+  if (!drag.axis) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 6) return;
+
+    drag.axis = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
+    drag.moved = true;
+
+    $("board").classList.add("is-dragging");
+    tileAt(drag.index).classList.add("dragging");
+  }
+
+  event.preventDefault();
+
+  const pitch = tilePitch();
+  const raw = drag.axis === "x" ? dx : dy;
+
+  const row = Math.floor(drag.index / SIZE);
+  const column = drag.index % SIZE;
+
+  const nextRow = row + (
+    drag.axis === "y" ? Math.sign(raw) : 0
+  );
+
+  const nextColumn = column + (
+    drag.axis === "x" ? Math.sign(raw) : 0
+  );
+
+  const valid =
+    raw !== 0 &&
+    nextRow >= 0 &&
+    nextRow < SIZE &&
+    nextColumn >= 0 &&
+    nextColumn < SIZE;
+
+  const neighbour = valid
+    ? nextRow * SIZE + nextColumn
+    : null;
+
+  if (
+    drag.neighbour !== null &&
+    drag.neighbour !== neighbour
+  ) {
+    const old = tileAt(drag.neighbour);
+
+    old.style.transform = "";
+    old.classList.remove("drag-neighbour");
+  }
+
+  drag.neighbour = neighbour;
+
+  // 邊緣往外拖有阻力，不讓方塊飛出棋盤。
+  drag.offset = valid
+    ? Math.max(-pitch, Math.min(pitch, raw))
+    : Math.max(-pitch * 0.15, Math.min(pitch * 0.15, raw * 0.2));
+
+  const x = drag.axis === "x" ? drag.offset : 0;
+  const y = drag.axis === "y" ? drag.offset : 0;
+
+  tileAt(drag.index).style.transform =
+    `translate(${x}px, ${y}px)`;
+
+  if (neighbour !== null) {
+    const other = tileAt(neighbour);
+
+    other.classList.add("drag-neighbour");
+    other.style.transform = `translate(${-x}px, ${-y}px)`;
+  }
+}, { passive: false });
+
+async function endTileDrag(event, cancelled = false) {
+  const drag = draggingTile;
+
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  draggingTile = null;
+
+  try {
+    if ($("board").hasPointerCapture(event.pointerId)) {
+      $("board").releasePointerCapture(event.pointerId);
+    }
+  } catch {}
+
+  $("board").classList.remove("is-dragging");
+
+  // 沒有拖動就交給原本 click 處理，保留點兩格交換。
+  if (!drag.moved) return;
+
+  swipeClickUntil = performance.now() + 500;
+
+  const passedThreshold =
+    Math.abs(drag.offset) >= tilePitch() * 0.28;
+
+  if (
+    !cancelled &&
+    drag.neighbour !== null &&
+    passedThreshold
+  ) {
+    await attempt(drag.index, drag.neighbour);
+    return;
+  }
+
+  // 拖得不夠遠或操作取消，滑回原位。
+  busy = true;
+  updateUI();
+
+  await returnTiles([
+    drag.index,
+    ...(drag.neighbour === null ? [] : [drag.neighbour])
+  ]);
+
+  busy = false;
+  updateUI();
+}
+
+$("board").addEventListener("pointerup", event => {
+  endTileDrag(event);
+});
+
+$("board").addEventListener("pointercancel", event => {
+  endTileDrag(event, true);
+});
+
+
+ $("board").addEventListener("keydown",e=>{
+  const cell=e.target.closest("[data-cell]");
+  if(!cell||busy)return;
+  const i=Number(cell.dataset.cell);
+  const shifts={ArrowLeft:-1,ArrowRight:1,ArrowUp:-SIZE,ArrowDown:SIZE};
+  if(!(e.key in shifts))return;
+  e.preventDefault();
+  const j=i+shifts[e.key];
+  if(j>=0&&j<49&&adjacent(i,j)){
+   $("board").querySelector(`[data-cell="${j}"]`)?.focus();
+  }
+ });
+
+ $("hintButton").onclick=()=>{
+  if(busy||finished)return;
+  const move=legalMove(grid);
+  if(!move)return;
+  selected=-1;renderBoard();
+  move.forEach(i=>$("board").querySelector(`[data-cell="${i}"]`)?.classList.add("hinted"));
+  say("金色邊框嗰兩隻兔兔，可以交換呀～");
+ };
+
+ $("shuffleButton").onclick=async()=>{
+  if(busy||finished||usedShuffle)return;
+  usedShuffle=true;busy=true;updateUI();
+  await reshuffle();
+  busy=false;updateUI();
+ };
+
+ $("restartButton").onclick=()=>{
+  if(!busy&&confirm("重新開始本關？"))loadLevel(level.n);
+ };
+
+ function levelMenu(){
+  const d=$("dialog");if(d.open)d.close();
+  d.innerHTML=`
+   <h2>兔兔的五十關</h2>
+   <p>完成目前關卡，就能解鎖下一關。</p>
+   <div class="levels">${LEVELS.map(l=>{
+    const unlocked=l.n<=progress.unlocked;
+    const stars=Number(progress.stars[l.n])||0;
+    return `<button type="button" data-level="${l.n}"
+     ${!unlocked?"disabled":""} class="${l.n===level.n?"current":""}">
+     ${unlocked?l.n:"鎖"}
+     <small>${stars?"★".repeat(stars):"　"}</small>
+    </button>`;
+   }).join("")}</div>
+   <div class="dialog-actions"><button data-close>關閉</button></div>`;
+  d.showModal();
+ }
+
+ $("levelsButton").onclick=levelMenu;
+ $("dialog").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.hasAttribute("data-level")){
+   const n=Number(b.dataset.level);
+   if(n<=progress.unlocked){$("dialog").close();loadLevel(n)}
+  }
+  if(b.hasAttribute("data-next")){
+   $("dialog").close();loadLevel(Math.min(50,level.n+1));
+  }
+  if(b.hasAttribute("data-retry")){
+   $("dialog").close();loadLevel(level.n);
+  }
+  if(b.hasAttribute("data-level-menu"))levelMenu();
+  if(b.hasAttribute("data-close"))$("dialog").close();
+ });
+
+ loadLevel(progress.unlocked);
+})();
+</script>
+</body>
+</html>
