@@ -413,6 +413,65 @@ let knownEntryIds = null;
     sleep:`<path d="M77 116q6 3 12 0m25 0q6 3 12 0"/>`
   };
 /* 真正的側躺睡姿，不再壓扁站姿 */
+/* 首頁兔兔的摸摸表情 */
+Object.assign(eyes, {
+  bliss: `
+    <path d="M76 112q7 9 14 0m23 0q7 9 14 0"/>
+    <path d="m77 116-3 2m51-2 3 2" stroke-width="1.3"/>
+  `,
+
+  sparkle: `
+    <ellipse cx="83" cy="114" rx="5.5" ry="7"
+      fill="#44302b" stroke="none"/>
+    <ellipse cx="120" cy="114" rx="5.5" ry="7"
+      fill="#44302b" stroke="none"/>
+    <ellipse cx="85" cy="111" rx="2" ry="2.5"
+      fill="white" stroke="none"/>
+    <ellipse cx="122" cy="111" rx="2" ry="2.5"
+      fill="white" stroke="none"/>
+    <circle cx="81" cy="117" r="1.2" fill="white" stroke="none"/>
+    <circle cx="118" cy="117" r="1.2" fill="white" stroke="none"/>
+  `,
+
+  adore: `
+    <path d="M83 120l-7-7a4.2 4.2 0 0 1 7-5
+      a4.2 4.2 0 0 1 7 5Z"
+      fill="#cc5d88" stroke="none"/>
+    <path d="M120 120l-7-7a4.2 4.2 0 0 1 7-5
+      a4.2 4.2 0 0 1 7 5Z"
+      fill="#cc5d88" stroke="none"/>
+  `,
+
+  nosey: `
+    <ellipse cx="83" cy="114" rx="6" ry="7"
+      fill="#fffaf4" stroke-width="1"/>
+    <ellipse cx="120" cy="114" rx="6" ry="7"
+      fill="#fffaf4" stroke-width="1"/>
+    <ellipse cx="86" cy="116" rx="2.8" ry="4"
+      fill="#44302b" stroke="none"/>
+    <ellipse cx="117" cy="116" rx="2.8" ry="4"
+      fill="#44302b" stroke="none"/>
+  `,
+
+  tongue: `
+    <path d="M77 116q6-10 12 0m25 0q6-10 12 0"/>
+  `,
+
+  giggle: `
+    <path d="m77 108 10 7-10 5m48-12-10 7 10 5"/>
+  `
+});
+
+let lastTouchExpression = "";
+let lastNoseTouch = 0;
+
+function chooseTouchExpression(list) {
+  const available = list.filter(value => value !== lastTouchExpression);
+  const chosen = available[Math.floor(Math.random() * available.length)];
+  lastTouchExpression = chosen;
+  return chosen;
+}
+
 const sleepingDrawings = new WeakMap();
 
 function showSleepingPose() {
@@ -694,13 +753,68 @@ function eatingArtwork() {
   `;
 }
 
+// 每種眼睛都有對應的小嘴巴。
+const touchMouths = {
+  bliss: `
+    <path d="M96 136q6 8 12 0"/>
+    <path d="M100 137v3m4-3v3"
+      stroke="#fffaf1" stroke-width="2"/>
+  `,
+
+  sparkle: `
+    <path d="M95 135q7 13 14 0Z" fill="#b9788a"/>
+  `,
+
+  adore: `
+    <path d="M94 134q8 17 16 0Z" fill="#b9788a"/>
+    <path d="M99 141q3-2 6 0" stroke="#edabbc"/>
+  `,
+
+  nosey: `
+    <ellipse cx="102" cy="139" rx="3" ry="3.7"
+      fill="#b9788a" stroke="none"/>
+  `,
+
+  tongue: `
+    <path d="M95 134q7 7 14 0"/>
+    <path d="M100 137h6v5q-3 6-6 0Z"
+      fill="#e9a0b4" stroke-width="1.1"/>
+    <path d="M103 139v4" stroke="#ba758c" stroke-width=".8"/>
+  `,
+
+  giggle: `
+    <path d="M93 133q9 20 18 0Z" fill="#ad697e"/>
+    <path d="M99 143q3-3 6 0"
+      stroke="#efb0bf" stroke-width="3"/>
+  `,
+
+  shy: `
+    <path d="M98 138q4 4 8 0"/>
+  `,
+
+  angry: `
+    <ellipse cx="77" cy="134" rx="11" ry="7"
+      fill="#eeb4c2" stroke="none" opacity=".8"/>
+    <ellipse cx="127" cy="134" rx="11" ry="7"
+      fill="#eeb4c2" stroke="none" opacity=".8"/>
+    <path d="M97 141q5-6 10 0"/>
+  `
+};
+
+if (touchMouths[value]) {
+  mouth = touchMouths[value];
+}
 
     scene.querySelector("[data-bh-face]").innerHTML=`
       <g fill="none" stroke="#6d5048" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
         ${eye}${mouth}
       </g>
-      ${["happy","enjoy","shy","wink"].includes(value)?`
+      ${[
+  "happy", "enjoy", "shy", "wink",
+  "bliss", "sparkle", "adore", "tongue", "giggle"
+].includes(value)?`
+
         <ellipse cx="74" cy="128" rx="11" ry="5"
           fill="#e894ab" opacity="${value==="shy"?.85:.55}"/>
         <ellipse cx="130" cy="128" rx="11" ry="5"
@@ -1341,73 +1455,226 @@ if(reduce.matches) {
     }
   }
 
-  async function pet(part="head",double=false) {
-    if(busy||!scene?.isConnected) return;
-    if (welcomeSleeping) {
-  await wakeWelcome("touch");
-  return;
-}
-    const now=Date.now();
+  async function pet(part = "head", double = false) {
+  if (busy || !scene?.isConnected) return;
 
-    try {
-      latest=await read();
-      if(!latest?.ready) return;
+  if (welcomeSleeping) {
+    await wakeWelcome("touch");
+    return;
+  }
 
-      if(resting()) {
-        line(say(
-          "噓～兔兔瞓緊覺，等佢休息下先。",
-          "嘘～兔兔正在睡觉，让它休息一会儿。",
-          "Shh… let your bunny finish the nap."
-        ));
-        return;
-      }
+  // 正在吃東西時不替換進食表情。
+  if (Date.now() < eatUntil) {
+    line(say(
+      "等我嚼完先～食緊嘢都想你陪住呀。",
+      "等我嚼完嘛～吃东西时也想你陪着。",
+      "Let me finish chewing! You can keep me company."
+    ));
+    return;
+  }
 
-      taps=taps.filter(t=>now-t<2000);
-      taps.push(now);
-      const angry=taps.length>=5;
-      if(angry) taps=[];
+  const target = scene;
+  const now = Date.now();
 
-      const expression=angry?"angry":
-        double?"shy":part==="nose"?"surprise":"enjoy";
+  try {
+    latest = await read();
 
-      setFace(expression);
-      faceUntil=Date.now()+3000;
-      hearts(!angry);
+    if (!latest?.ready || target !== scene || !target.isConnected) {
+      return;
+    }
 
-      line(angry?say(
-        "喂！兔兔唔係門鐘呀！輕輕摸先原諒你。",
-        "喂！兔兔又不是门铃！轻轻摸才原谅你。",
-        "Hey! I’m not a doorbell. Gentle pets, please!"
-      ):double?say(
-        "突然咁錫我……耳仔都紅晒喇！",
-        "突然这么宠我……耳朵都红啦！",
-        "So sweet all of a sudden… my ears are blushing!"
-      ):part==="nose"?say(
-        "啵！鼻鼻唔係確認掣嚟㗎～",
-        "啵！鼻子可不是确认按钮哦～",
-        "Boop! My nose isn’t the confirm button!"
-      ):say(
-        "嗯～就係呢度喇，唔好咁快停呀。",
-        "嗯～就是这里，不要这么快停呀。",
-        "Mmm… right there. Don’t stop just yet."
+    if (resting()) {
+      line(say(
+        "噓～兔兔休息緊，等我瞓醒先同你玩。",
+        "嘘～兔兔正在休息，等我睡醒再陪你玩。",
+        "Shh… let me finish my nap first."
       ));
+      return;
+    }
 
-      const result=await saveAction(angry?"angry":"pet");
-      if(result) {
-        latest=result.state;
+    /*
+     * 只有輕點才累計「不停戳」。
+     * 左右撫摸不會被誤判成連點生氣。
+     */
+    const stroking = part === "stroke";
+
+    if (stroking) {
+      taps = [];
+    } else {
+      taps = taps.filter(time => now - time < 2000);
+      taps.push(now);
+    }
+
+    const angry = taps.length >= 5;
+    if (angry) taps = [];
+
+    let expression;
+    let words;
+
+    if (angry) {
+      expression = "angry";
+      words = [
+        "喂喂！兔兔唔係門鐘呀！毛都戳亂晒喇，摸返順先！",
+        "喂喂！兔兔又不是门铃！毛都戳乱啦，摸顺才行！",
+        "Hey! I’m not a doorbell! Smooth my ruffled fluff first!"
+      ];
+
+    } else if (double) {
+      expression = "shy";
+      words = [
+        "突然咁錫我……唔准望住我面紅呀！",
+        "突然这么宠我……不许盯着我的脸红看！",
+        "So sweet all of a sudden… no staring at my blush!"
+      ];
+
+    } else if (part === "nose") {
+      expression = now - lastNoseTouch < 5000
+        ? "surprise"
+        : "nosey";
+
+      lastNoseTouch = now;
+
+      words = expression === "nosey" ? [
+        "咦？邊個掂我個鼻鼻？等我望清楚先……",
+        "咦？谁碰我的小鼻子？让我仔细看看……",
+        "Who booped my nose? Let me take a closer look…"
+      ] : [
+        "啵！鼻鼻唔係儲存掣嚟㗎～再撳要收草草費！",
+        "啵！鼻子不是保存按钮哦～再戳要收草草费！",
+        "Boop! That’s not the save button. More boops cost hay!"
+      ];
+
+    } else if (stroking) {
+      expression = chooseTouchExpression(
+        (latest.rabbitCare?.affection || 0) >= 50
+          ? ["bliss", "sparkle", "adore"]
+          : ["bliss", "sparkle", "enjoy"]
+      );
+
+      const lines = {
+        bliss: [
+          "嗯～～就係呢度！兔兔快要融成一粒麻糬喇。",
+          "嗯～～就是这里！兔兔快融成一颗麻薯啦。",
+          "Mmm… right there! I’m melting into a little mochi."
+        ],
+        sparkle: [
+          "你隻手識魔法㗎？點解摸得咁舒服嘅！",
+          "你的手会魔法吗？怎么摸得这么舒服！",
+          "Are your hands magic? These pets are amazing!"
+        ],
+        adore: [
+          "最鍾意你咁摸我喇！今日可唔可以留耐啲呀？",
+          "最喜欢你这样摸我啦！今天能不能多陪我一会儿？",
+          "I love your pets! Can you stay a little longer?"
+        ],
+        enjoy: [
+          "慢慢摸呀～耳仔中間嗰度都要呀。",
+          "慢慢摸哦～耳朵中间那里也要。",
+          "Nice and slowly… between my ears too, please."
+        ]
+      };
+
+      words = lines[expression];
+
+    } else if (part === "body") {
+      expression = chooseTouchExpression(["happy", "tongue", "giggle"]);
+
+      const lines = {
+        happy: [
+          "今日份摸摸收到！兔兔開心到想跳兩下～",
+          "今天的摸摸收到！兔兔开心得想蹦两下～",
+          "Today’s pets received! Time for a happy hop!"
+        ],
+        tongue: [
+          "略～摸咗我就要陪我，唔可以扮唔識呀！",
+          "略～摸过我就要陪我，不许假装不认识哦！",
+          "Bleh! You petted me. We’re friends now!"
+        ],
+        giggle: [
+          "哈哈！嗰度有啲痕呀，兔兔忍唔住笑喇～",
+          "哈哈！那里有点痒，兔兔忍不住笑啦～",
+          "Hehe! That spot tickles. I can’t help giggling!"
+        ]
+      };
+
+      words = lines[expression];
+
+    } else {
+      expression = chooseTouchExpression(["enjoy", "bliss", "wink"]);
+
+      const lines = {
+        enjoy: [
+          "啱喇～個頭借你摸，唔好咁快停呀。",
+          "对啦～脑袋借你摸，不要这么快停哦。",
+          "That’s it… you may borrow my head for more pets."
+        ],
+        bliss: [
+          "舒服到耳仔都放鬆晒喇，今日最識摸就係你！",
+          "舒服得耳朵都放松啦，今天最会摸的就是你！",
+          "Even my ears relaxed. Best petter of the day!"
+        ],
+        wink: [
+          "嘿嘿，畀你摸到兔兔嘅開心掣喇～",
+          "嘿嘿，你找到兔兔的开心按钮啦～",
+          "Hehe, you found my happy button!"
+        ]
+      };
+
+      words = lines[expression];
+    }
+
+    setFace(expression);
+    faceUntil = Date.now() + 3600;
+    hearts(!angry);
+    line(say(...words));
+
+    // 身體短暫反應，不和追球等活動搶控制。
+    const pose = target.querySelector("[data-bh-pet]");
+
+    if (pose && typeof pose.animate === "function" && !reduce.matches) {
+      const frames = angry
+        ? [
+            { transform: "translateX(0)" },
+            { transform: "translateX(-3px)" },
+            { transform: "translateX(3px)" },
+            { transform: "translateX(0)" }
+          ]
+        : [
+            { transform: "translateY(0)" },
+            { transform: "translateY(-4px)" },
+            { transform: "translateY(0)" }
+          ];
+
+      pose.animate(frames, {
+        duration: angry ? 350 : 450,
+        easing: "ease-in-out"
+      });
+    }
+
+    const result = await saveAction(angry ? "angry" : "pet");
+
+    if (result) {
+      latest = result.state;
+
+      if (target === scene && target.isConnected) {
         showDelta(result.delta);
         affectionLabel();
       }
-
-      clearTimeout(messageTimer);
-      const target=scene;
-      messageTimer=setTimeout(()=>{
-        if(target===scene&&target.isConnected) hearts(false);
-      },3000);
-    } catch(error) {
-      console.error("Bunny pet:",error);
     }
+
+    clearTimeout(messageTimer);
+
+    messageTimer = setTimeout(() => {
+      if (target === scene && target.isConnected) {
+        hearts(false);
+      }
+    }, 3400);
+
+  } catch (error) {
+    console.error("摸摸兔兔：", error);
   }
+}
+
 
   function petPart(event) {
     try {
@@ -1597,11 +1864,12 @@ if(reduce.matches) {
 
     if(g.distance>16) g.moved=true;
 
-    if(g.distance>35&&Date.now()-lastPet>1300) {
-      lastPet=Date.now();
-      g.distance=0;
-      pet("head");
-    }
+    if (g.distance > 35 && Date.now() - lastPet > 1300) {
+  lastPet = Date.now();
+  g.distance = 0;
+  pet("stroke");
+}
+
   });
 
   document.addEventListener("pointerup",event=>{
