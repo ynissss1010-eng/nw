@@ -2698,7 +2698,7 @@
     </div>
 
     <div class="footer-credit">
-      Made by Yanice Mai,Jaing Yu Ting
+      Made by Yanice Mai,Jiang Yu Ting
     </div>
   </div>
 </footer>
