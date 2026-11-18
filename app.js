@@ -780,8 +780,8 @@
       <div><span class="tag">OUR LITTLE EVERYDAY</span>
       <h1>${esc(S.profile.name)}${say("，返嚟喇！", "，回来啦！", ", welcome home!")}</h1>
       <p>${esc(say(
-        "記低今日嘅收支，順手留張相。兔兔幫你收好，每一日都值得記住。",
-        "记下今天的收支，顺手留张照片。兔兔替你收好，每一天都值得记住。",
+        "記低今日嘅收支，順手留張相。兔兔幫你記住每一日。",
+        "记下今天的收支，顺手留张照片。兔兔替你记住每一天。",
         "Record today’s money and tuck in a photo. Every little day deserves a place."
       ))}</p>
       <div class="hero-actions">${btn("新增記帳", "newEntry", "", "primary")}
